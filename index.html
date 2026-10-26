@@ -77,62 +77,58 @@
 
         // 🌟 標準 LINE LIFF 身分識別流程
         async function initializeLiff() {
-    try {
-        // 1. 初始化 LIFF
-        await liff.init({ liffId: LIFF_ID });
-        
-        // 2. 檢查是否在 LINE App 裡面
-        if (liff.isInClient()) {
-            // 如果在 LINE 裡面但還沒登入，強制導向 LINE 登入授權
-            if (!liff.isLoggedIn()) {
-                liff.login();
-                return; // 等待登入重新導回
+            try {
+                // 1. 初始化 LIFF
+                await liff.init({ liffId: LIFF_ID });
+                
+                // 2. 檢查是否在 LINE App 裡面
+                if (liff.isInClient()) {
+                    if (!liff.isLoggedIn()) {
+                        liff.login();
+                        return;
+                    }
+                    
+                    let profile = await liff.getProfile();
+                    currentUserName = profile.displayName;
+                    document.getElementById('lineUser').innerText = `目前登入：${currentUserName}`;
+                } else {
+                    currentUserName = "測試同仁 (電腦網頁)";
+                    document.getElementById('lineUser').innerText = `目前登入：${currentUserName}`;
+                }
+
+            } catch (error) {
+                console.error("LIFF Init Error:", error);
+                // 減少視窗干擾，顯示友善提示
+                document.getElementById('lineUser').innerText = `目前登入：訪客模式`;
             }
-            
-            // 3. 已經登入，直接抓取真實 Profile
-            let profile = await liff.getProfile();
-            currentUserName = profile.displayName; // 抓到你的真實 LINE 名字！
-            document.getElementById('lineUser').innerText = `目前登入：${currentUserName}`;
-        } else {
-            // 如果是在電腦端一般瀏覽器測試
-            currentUserName = "測試同仁 (電腦網頁)";
-            document.getElementById('lineUser').innerText = `目前登入：${currentUserName}`;
         }
 
-    } catch (error) {
-        // 如果還有其他例外，跳出詳細錯誤以便我們看見
-        alert("LIFF 驗證發生錯誤: " + JSON.stringify(error));
-        currentUserName = "測試同仁 (發生錯誤)";
-        document.getElementById('lineUser').innerText = `目前登入：${currentUserName}`;
-    }
-}
-
-        // 載入店家清單
-        function loadStores() {
-            google.script.run
-                .withSuccessHandler(function(result) {
-                    if (result.status === "success" && result.data.length > 0) {
-                        let stores = result.data;
-                        let html = "";
-                        stores.forEach(store => {
-                            html += `<option value="${store.storeId}" data-name="${store.storeName}">${store.storeName}</option>`;
-                        });
-                        let selectEl = document.getElementById("storeSelect");
-                        selectEl.innerHTML = html;
-                        
-                        if (selectEl.options.length > 0) {
-                            currentStoreId = selectEl.options[0].value;
-                            currentStoreName = selectEl.options[0].getAttribute("data-name");
-                            loadMenuForStore(currentStoreId);
-                        }
-                    } else {
-                        document.getElementById("storeSelect").innerHTML = '<option value="">無可用店家</option>';
+        // 載入店家清單 (改用通用 fetch API)
+        async function loadStores() {
+            try {
+                let res = await fetch(`${GAS_API_URL}?action=getStores`);
+                let result = await res.json();
+                
+                if (result.status === "success" && result.data.length > 0) {
+                    let stores = result.data;
+                    let html = "";
+                    stores.forEach(store => {
+                        html += `<option value="${store.storeId}" data-name="${store.storeName}">${store.storeName}</option>`;
+                    });
+                    let selectEl = document.getElementById("storeSelect");
+                    selectEl.innerHTML = html;
+                    
+                    if (selectEl.options.length > 0) {
+                        currentStoreId = selectEl.options[0].value;
+                        currentStoreName = selectEl.options[0].getAttribute("data-name");
+                        loadMenuForStore(currentStoreId);
                     }
-                })
-                .withFailureHandler(function(error) {
-                    alert("載入店家失敗：" + error);
-                })
-                .getStoresApi();
+                } else {
+                    document.getElementById("storeSelect").innerHTML = '<option value="">無可用店家</option>';
+                }
+            } catch (error) {
+                alert("載入店家失敗：" + error.message);
+            }
         }
 
         function onStoreChange() {
@@ -142,28 +138,29 @@
             loadMenuForStore(currentStoreId);
         }
 
-        function loadMenuForStore(storeId) {
+        // 載入菜單 (改用通用 fetch API)
+        async function loadMenuForStore(storeId) {
             document.getElementById("menuList").innerHTML = '<div class="text-center text-gray-400 py-4">載入菜單中...</div>';
             orderCounts = {};
 
-            google.script.run
-                .withSuccessHandler(function(result) {
-                    if (result.status === "success") {
-                        currentMenuData = result.data;
-                        renderMenu();
-                    } else {
-                        document.getElementById("menuList").innerHTML = '<div class="text-center text-red-400 py-4">載入菜單失敗</div>';
-                    }
-                })
-                .withFailureHandler(function(error) {
-                    alert("讀取菜單發生錯誤：" + error);
-                })
-                .getMenuApi(storeId);
+            try {
+                let res = await fetch(`${GAS_API_URL}?action=getMenu&storeId=${encodeURIComponent(storeId)}`);
+                let result = await res.json();
+
+                if (result.status === "success") {
+                    currentMenuData = result.data;
+                    renderMenu();
+                } else {
+                    document.getElementById("menuList").innerHTML = '<div class="text-center text-red-400 py-4">載入菜單失敗</div>';
+                }
+            } catch (error) {
+                alert("讀取菜單發生錯誤：" + error.message);
+            }
         }
 
         function renderMenu() {
             let html = "";
-            if (currentMenuData.length === 0) {
+            if (!currentMenuData || currentMenuData.length === 0) {
                 document.getElementById("menuList").innerHTML = '<div class="text-center text-gray-400 py-4">此店家目前無菜單資料</div>';
                 return;
             }
@@ -223,7 +220,7 @@
                         targetDate: targetDate,
                         storeId: currentStoreId,
                         storeName: currentStoreName,
-                        lineName: currentUserName, // 這裡會自動帶入你的真實 LINE 名字！
+                        lineName: currentUserName,
                         item: data.item,
                         quantity: data.quantity,
                         unitPrice: data.unitPrice,
