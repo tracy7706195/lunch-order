@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIFF 體檢測試</title>
+    <!-- 標準 LINE LIFF SDK -->
+    <script src="https://static.line-scdn.net/sdk/v2/liff.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 30px; background: #111; color: #fff; text-align: center; }
+        .card { background: #222; padding: 20px; border-radius: 12px; margin-top: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .success { color: #4ade80; font-weight: bold; font-size: 18px; }
+        .error { color: #f87171; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <h2>🩺 LINE LIFF 狀態健康檢查</h2>
+    <div class="card">
+        <p id="status" style="color: yellow;">正在初始化...</p>
+        <div id="result" style="margin-top: 15px;"></div>
+    </div>
+
+    <script>
+        const LIFF_ID = "2012191744-V9c1IIFW";
+
+        window.onload = async function() {
+            const statusEl = document.getElementById('status');
+            const resultEl = document.getElementById('result');
+
+            try {
+                statusEl.innerText = "1. 正在呼叫 liff.init()...";
+                await liff.init({ liffId: LIFF_ID });
+
+                statusEl.innerText = "2. 檢查是否在 LINE App 內...";
+                if (!liff.isInClient()) {
+                    resultEl.innerHTML = `<p class="error">⚠️ 目前是在一般網域或電腦瀏覽器開啟。<br>請務必使用手機 LINE 點擊 LIFF 連結進行驗證！</p>`;
+                    return;
+                }
+
+                statusEl.innerText = "3. 檢查登入狀態...";
+                if (!liff.isLoggedIn()) {
+                    statusEl.innerText = "尚未登入，即將導向 LINE 授權頁面...";
+                    liff.login();
+                    return;
+                }
+
+                statusEl.innerText = "4. 正在抓取使用者 Profile...";
+                let profile = await liff.getProfile();
+
+                // 成功抓到！
+                statusEl.innerText = "🎉 LIFF 驗證完全正常！";
+                resultEl.innerHTML = `
+                    <p class="success">登入成功！</p>
+                    <p>LINE 顯示名稱：<strong>${profile.displayName}</strong></p>
+                    <p style="font-size: 12px; color: #aaa;">User ID: ${profile.userId}</p>
+                `;
+
+            } catch (err) {
+                statusEl.innerText = "❌ LIFF 初始化發生錯誤！";
+                resultEl.innerHTML = `<p class="error">錯誤細節：<br>${err.message || JSON.stringify(err)}</p>`;
+            }
+        };
+    </script>
+</body>
+</html>
