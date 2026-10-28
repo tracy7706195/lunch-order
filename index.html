@@ -6,8 +6,14 @@
     <title>店小二點餐系統</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 🔴 絕對標準的 LINE LIFF SDK 引入方式，放在 Head 第一行 -->
-    <script charset="utf-8" src="https://static.line-scdn.net/sdk/v2/liff.js"></script>
+    
+    <!-- 🟢 雙保險：主 CDN 失敗時自動切換備用 CDN -->
+    <script src="https://static.line-scdn.net/sdk/v2/liff.js"></script>
+    <script>
+        if (typeof liff === 'undefined') {
+            document.write('<script src="https://unpkg.com/@line/liff@2/dist/lib/index.js"><\/script>');
+        }
+    </script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen p-4">
     <div class="max-w-md mx-auto bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
@@ -47,9 +53,9 @@
             document.getElementById('targetDate').value = today;
 
             try {
-                // 檢查全域 liff 物件是否存在
+                // 再次確認雙 CDN 載入結果
                 if (typeof liff === 'undefined') {
-                    throw new Error("SDK 載入失敗：liff 物件不存在");
+                    throw new Error("主備用 CDN 皆無法載入 liff.js，請檢查網路連線或切換行動網路測試。");
                 }
 
                 // 初始化 LIFF
@@ -63,12 +69,10 @@
                     let profile = await liff.getProfile();
                     document.getElementById('lineUser').innerText = `目前登入：${profile.displayName}`;
                 } else {
-                    // 如果在電腦或非 LINE 環境
                     document.getElementById('lineUser').innerText = `目前登入：測試同仁 (非 LINE 環境)`;
                 }
             } catch (error) {
                 console.error("LIFF Init Error:", error);
-                // 🔴 直接彈窗報錯，讓我們看看到底卡在哪個細節
                 alert("LIFF 認證失敗詳情:\n" + (error.message || JSON.stringify(error)));
                 document.getElementById('lineUser').innerText = `目前登入：訪客模式 (認證失敗)`;
             }
