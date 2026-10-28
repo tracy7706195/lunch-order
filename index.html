@@ -58,34 +58,36 @@
         let currentMenuData = [];
         let orderCounts = {};
 
-        window.onload = async function() {
+window.onload = async function() {
             let today = new Date().toISOString().split('T')[0];
             document.getElementById('targetDate').value = today;
 
-            // 嘗試非阻塞式初始化 LIFF
             try {
-                if (typeof liff !== 'undefined') {
-                    await liff.init({ liffId: LIFF_ID });
-                    if (liff.isInClient() && liff.isLoggedIn()) {
-                        let profile = await liff.getProfile();
-                        currentUserName = profile.displayName;
-                    } else if (liff.isInClient()) {
+                if (typeof liff === 'undefined') {
+                    throw new Error("liff 物件不存在");
+                }
+                
+                // 執行初始化並彈窗看結果
+                await liff.init({ liffId: LIFF_ID });
+                
+                if (liff.isInClient()) {
+                    if (!liff.isLoggedIn()) {
                         liff.login();
                         return;
-                    } else {
-                        currentUserName = "電腦測試同仁";
                     }
+                    let profile = await liff.getProfile();
+                    currentUserName = profile.displayName;
+                    alert("成功抓到身分！名字是：" + currentUserName);
                 } else {
-                    currentUserName = "訪客模式";
+                    currentUserName = "電腦測試同仁";
                 }
             } catch (e) {
-                console.log("LIFF 略過：", e);
-                currentUserName = "訪客模式";
+                // 🔴 讓手機直接彈窗告訴我們為什麼進不去
+                alert("LIFF 初始化失敗原因: " + (e.message || JSON.stringify(e)));
+                currentUserName = "訪客模式 (錯誤: " + e.message + ")";
             }
 
             document.getElementById('lineUser').innerText = `目前登入：${currentUserName}`;
-
-            // 無論認證結果如何，直接載入店家與菜單，確保系統能正常運作！
             loadStores();
         };
 
