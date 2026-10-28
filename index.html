@@ -1,223 +1,344 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>店小二跨日點餐系統</title>
-    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 標準 LINE LIFF SDK -->
-    <script charset="utf-8" src="https://static.line-scdn.net/sdk/v2/liff.js"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        /* 隱藏滾動條但保持滾動功能 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-4">
-    <div class="max-w-md mx-auto bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
-        
-        <div class="text-center space-y-2">
-            <h1 class="text-2xl font-bold text-green-400">🍱 店小二跨日點餐系統</h1>
-            <p id="lineUser" class="text-sm text-green-300 font-bold">正在初始化系統與身分...</p>
-        </div>
+<body class="bg-gray-900 text-white min-h-screen pb-24">
 
-        <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
+    <!-- 頂部固定標題列 -->
+    <header class="bg-emerald-600 p-4 text-center shadow-md sticky top-0 z-50">
+        <h1 class="text-xl font-bold">🍱 店小二點餐系統</h1>
+        <p id="userWelcome" class="text-xs text-emerald-100 mt-0.5">目前登入：身分驗證中...</p>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="max-w-md mx-auto p-4 space-y-4">
+        
+        <!-- 店家與日期資訊區 -->
+        <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-sm space-y-3">
             <div class="flex justify-between items-center">
-                <span class="text-sm font-medium text-gray-300">目標日期：</span>
-                <input type="date" id="targetDate" class="bg-gray-700 text-white px-3 py-1 rounded border border-gray-600 text-sm">
+                <span class="text-xs bg-emerald-900 text-emerald-300 px-2 py-1 rounded font-semibold">快速點餐模式</span>
+                <span id="displayTargetDate" class="text-sm font-bold text-gray-300">目標日期：載入中...</span>
             </div>
             
-            <div class="flex justify-between items-center">
-                <span class="text-sm font-medium text-gray-300">選擇店家：</span>
-                <select id="storeSelect" onchange="onStoreChange()" class="bg-gray-700 text-white px-3 py-1.5 rounded border border-gray-600 text-sm w-48">
-                    <option value="">載入店家清單中...</option>
+            <div>
+                <label class="block text-xs font-bold text-gray-400 mb-1">切換店家：</label>
+                <select id="storeSelect" onchange="changeStore(this.value)" class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg text-sm font-bold text-white focus:outline-none focus:border-emerald-500">
+                    <option value="store_01">明美快餐</option>
+                    <option value="store_02">彰濱現炒</option>
+                    <option value="store_03">王牌飯包</option>
+                    <option value="store_04">偶鵝嚐嚐鹿港店</option>
+                    <option value="store_05">蒙坤泰式私廚</option>
+                    <option value="store_06">員湘園</option>
                 </select>
             </div>
         </div>
 
-        <div class="space-y-3">
-            <h2 class="text-sm font-bold text-gray-300 uppercase tracking-wider">菜單列表：</h2>
-            <div id="menuList" class="space-y-2">
-                <div class="text-center text-gray-400 py-4">正在載入菜單...</div>
+        <!-- 懸浮式分類導覽列 -->
+        <div id="categoryTabsContainer" class="sticky top-[73px] z-40 bg-gray-900/95 backdrop-blur py-2 border-b border-gray-700">
+            <div id="categoryTabs" class="flex overflow-x-auto space-x-2 no-scrollbar px-1">
+                <!-- 動態生成分類按鈕 -->
             </div>
         </div>
 
-        <div class="space-y-1">
-            <label class="text-sm text-gray-300">整體備註 (例如：不要辣、飯少)：</label>
-            <input type="text" id="noteInput" placeholder="選填備註..." class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white">
+        <!-- 全菜單展開區 -->
+        <div id="menuSectionsContainer" class="space-y-6">
+            <p class="text-gray-400 text-center py-8">載入菜單中...</p>
         </div>
 
-        <button onclick="submitOrder()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl shadow transition duration-200">
-            🚀 確認送出所有勾選餐點
-        </button>
-    </div>
+        <!-- 底部備註與送出區 -->
+        <div class="fixed bottom-0 left-0 right-0 bg-gray-800/95 backdrop-blur border-t border-gray-700 p-4 z-50">
+            <div class="max-w-md mx-auto space-y-2">
+                <input type="text" id="noteInput" placeholder="整體備註（例如：不要辣、飯少）" class="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-xs text-white focus:outline-none focus:border-emerald-500">
+                <button onclick="submitAllOrders()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg transition duration-200 text-sm">
+                    確認送出所有勾選餐點 🚀
+                </button>
+            </div>
+        </div>
 
+    </main>
+
+    <!-- JavaScript 邏輯 -->
     <script>
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxQcZewSGx0jWMK75CGCElJUY3QCeBA-VWbWpZhgc1ek0e_0ub5KSGKplltVaSuEWhTyQ/exec";
         const LIFF_ID = "2012191744-V9c1IIFW";
 
-        let currentUserName = "訪客模式";
-        let currentStoreId = "";
-        let currentStoreName = "";
-        let currentMenuData = [];
-        let orderCounts = {};
+        let currentUser = { name: "訪客模式", id: "U_TEST" };
+        let currentStoreId = "store_01";
+        let targetDate = new Date().toISOString().split('T')[0];
+        
+        let menuDataGrouped = {}; 
+        let userSelectedItems = {}; 
 
         window.onload = async function() {
-            let today = new Date().toISOString().split('T')[0];
-            document.getElementById('targetDate').value = today;
+            // 1. 初始化 LIFF 抓取身分
+            await initializeLiff();
 
-            // 初始化 LIFF 並抓取身分
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get("store")) {
+                currentStoreId = urlParams.get("store");
+                let storeSelectEl = document.getElementById("storeSelect");
+                if(storeSelectEl) storeSelectEl.value = currentStoreId;
+            }
+            if (urlParams.get("date")) targetDate = urlParams.get("date");
+
+            document.getElementById("displayTargetDate").innerText = `目標日期：${targetDate}`;
+            await loadMenu();
+        };
+
+        async function initializeLiff() {
             try {
                 if (typeof liff !== 'undefined') {
                     await liff.init({ liffId: LIFF_ID });
-                    if (liff.isInClient() && liff.isLoggedIn()) {
+                    if (liff.isInClient()) {
+                        if (!liff.isLoggedIn()) {
+                            liff.login();
+                            return;
+                        }
                         let profile = await liff.getProfile();
-                        currentUserName = profile.displayName;
-                    } else if (liff.isInClient()) {
-                        liff.login();
-                        return;
+                        currentUser.name = profile.displayName;
+                        currentUser.id = profile.userId;
                     } else {
-                        currentUserName = "電腦測試同仁";
+                        currentUser.name = "電腦測試同仁";
                     }
                 }
             } catch (e) {
                 console.warn("LIFF 初始化略過：", e);
-                currentUserName = "訪客模式";
+                currentUser.name = "訪客模式";
             }
+            document.getElementById("userWelcome").innerText = `目前登入：${currentUser.name}`;
+        }
 
-            document.getElementById('lineUser').innerText = `目前登入：${currentUserName}`;
-            loadStores();
-        };
+        // 切換店家
+        function changeStore(newStoreId) {
+            currentStoreId = newStoreId;
+            userSelectedItems = {}; 
+            loadMenu();
+        }
 
-        async function loadStores() {
+        // 撈取菜單並依類別分組
+        async function loadMenu() {
+            let container = document.getElementById("menuSectionsContainer");
+            container.innerHTML = '<p class="text-gray-400 text-center py-8">載入菜單中...</p>';
+
             try {
-                let res = await fetch(`${GAS_API_URL}?action=getStores`);
+                let res = await fetch(`${GAS_API_URL}?action=getMenu&storeId=${currentStoreId}`);
                 let result = await res.json();
                 
-                if (result.status === "success" && result.data.length > 0) {
-                    let stores = result.data;
-                    let html = "";
-                    stores.forEach(store => {
-                        html += `<option value="${store.storeId}" data-name="${store.storeName}">${store.storeName}</option>`;
-                    });
-                    let selectEl = document.getElementById("storeSelect");
-                    selectEl.innerHTML = html;
+                if (result.status === "success") {
+                    let rawData = result.data;
+                    menuDataGrouped = {};
                     
-                    if (selectEl.options.length > 0) {
-                        currentStoreId = selectEl.options[0].value;
-                        currentStoreName = selectEl.options[0].getAttribute("data-name");
-                        loadMenuForStore(currentStoreId);
+                    rawData.forEach(item => {
+                        let cat = item.category || "其他";
+                        if (!menuDataGrouped[cat]) {
+                            menuDataGrouped[cat] = [];
+                        }
+                        menuDataGrouped[cat].push(item);
+                    });
+
+                    let categories = Object.keys(menuDataGrouped);
+                    if (categories.length > 0) {
+                        renderTabs(categories);
+                        renderMenuSections(categories);
+                    } else {
+                        document.getElementById("categoryTabs").innerHTML = "";
+                        container.innerHTML = '<p class="text-gray-400 text-center py-8">此店家目前尚無菜單資料</p>';
                     }
                 } else {
-                    document.getElementById("storeSelect").innerHTML = '<option value="">無可用店家</option>';
+                    alert("讀取菜單失敗：" + result.message);
                 }
-            } catch (error) {
-                alert("載入店家失敗：" + error.message);
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<p class="text-red-400 text-center py-8">無法連線至試算表</p>';
             }
         }
 
-        function onStoreChange() {
-            let selectEl = document.getElementById("storeSelect");
-            currentStoreId = selectEl.value;
-            currentStoreName = selectEl.options[selectEl.selectedIndex].getAttribute("data-name");
-            loadMenuForStore(currentStoreId);
-        }
-
-        async function loadMenuForStore(storeId) {
-            document.getElementById("menuList").innerHTML = '<div class="text-center text-gray-400 py-4">載入菜單中...</div>';
-            orderCounts = {};
-
-            try {
-                let res = await fetch(`${GAS_API_URL}?action=getMenu&storeId=${encodeURIComponent(storeId)}`);
-                let result = await res.json();
-
-                if (result.status === "success") {
-                    currentMenuData = result.data;
-                    renderMenu();
-                } else {
-                    document.getElementById("menuList").innerHTML = '<div class="text-center text-red-400 py-4">載入菜單失敗</div>';
-                }
-            } catch (error) {
-                alert("讀取菜單發生錯誤：" + error.message);
-            }
-        }
-
-        function renderMenu() {
-            let html = "";
-            if (!currentMenuData || currentMenuData.length === 0) {
-                document.getElementById("menuList").innerHTML = '<div class="text-center text-gray-400 py-4">此店家目前無菜單資料</div>';
-                return;
-            }
-
-            currentMenuData.forEach(item => {
-                orderCounts[item.itemName] = 0;
-                html += `
-                    <div class="flex justify-between items-center bg-gray-700/40 p-3 rounded-lg">
-                        <div>
-                            <div class="font-bold text-white">${item.itemName}</div>
-                            <div class="text-xs text-gray-400">NT$ ${item.unitPrice} <span class="ml-2 text-gray-500">[${item.category}]</span></div>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <button onclick="changeQty('${item.itemName}', -1)" class="bg-gray-600 px-2.5 py-1 rounded text-sm">-</button>
-                            <span id="qty_${item.itemName}" class="w-6 text-center font-bold">0</span>
-                            <button onclick="changeQty('${item.itemName}', 1)" class="bg-green-600 px-2.5 py-1 rounded text-sm">+</button>
-                        </div>
-                    </div>
+        function renderTabs(categories) {
+            let tabsHtml = "";
+            categories.forEach((cat, index) => {
+                let activeClass = index === 0 ? "bg-emerald-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700";
+                tabsHtml += `
+                    <button id="tab_${cat}" onclick="scrollToCategory('${cat}')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition ${activeClass} border border-gray-700">
+                        ${cat}
+                    </button>
                 `;
             });
-            document.getElementById("menuList").innerHTML = html;
+            document.getElementById("categoryTabs").innerHTML = tabsHtml;
         }
 
-        function changeQty(itemName, delta) {
-            orderCounts[itemName] = Math.max(0, (orderCounts[itemName] || 0) + delta);
-            let el = document.getElementById(`qty_${itemName}`);
-            if (el) el.innerText = orderCounts[itemName];
+        function scrollToCategory(cat) {
+            let sectionEl = document.getElementById(`section_${cat}`);
+            if (sectionEl) {
+                let headerOffset = 130;
+                let elementPosition = sectionEl.getBoundingClientRect().top;
+                let offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+            }
         }
 
-        async function submitOrder() {
-            let targetDate = document.getElementById('targetDate').value;
-            let note = document.getElementById('noteInput').value;
-            
-            let selectedItems = [];
-            for (let itemName in orderCounts) {
-                if (orderCounts[itemName] > 0) {
-                    let found = currentMenuData.find(i => i.itemName === itemName);
-                    let unitPrice = found ? found.unitPrice : 0;
-                    selectedItems.push({
+        function renderMenuSections(categories) {
+            let container = document.getElementById("menuSectionsContainer");
+            let html = "";
+
+            categories.forEach(cat => {
+                let items = menuDataGrouped[cat];
+                html += `
+                    <div id="section_${cat}" class="category-section space-y-3 pt-2">
+                        <h3 class="text-emerald-400 font-bold text-base border-b border-gray-700 pb-1 sticky top-[120px] bg-gray-900/90 py-1 z-30">${cat}</h3>
+                        <div class="space-y-2.5">
+                `;
+
+                items.forEach(item => {
+                    let currentQty = userSelectedItems[item.itemName] ? userSelectedItems[item.itemName].qty : 0;
+                    let safeId = item.itemName.replace(/[\s\(\)\/]/g, '_');
+
+                    html += `
+                        <div class="flex items-center justify-between bg-gray-800 p-3 rounded-xl border border-gray-700 shadow-sm">
+                            <div class="flex-1 pr-2">
+                                <div class="font-bold text-white text-sm">${item.itemName}</div>
+                                <div class="text-xs text-emerald-400 font-semibold mt-0.5">$${item.unitPrice}</div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button type="button" onclick="updateQty('${item.itemName}', ${item.unitPrice}, -1)" class="w-8 h-8 bg-gray-700 rounded-lg font-bold text-sm hover:bg-gray-600">-</button>
+                                <input type="number" id="qty_${safeId}" value="${currentQty}" min="0" oninput="inputQty('${item.itemName}', ${item.unitPrice}, this.value)" class="w-12 text-center font-bold text-sm bg-gray-700 border border-gray-600 rounded-lg p-1 text-white">
+                                <button type="button" onclick="updateQty('${item.itemName}', ${item.unitPrice}, 1)" class="w-8 h-8 bg-gray-700 rounded-lg font-bold text-sm hover:bg-gray-600">+</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div></div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function updateQty(itemName, unitPrice, amount) {
+            if (!userSelectedItems[itemName]) {
+                userSelectedItems[itemName] = { price: unitPrice, qty: 0 };
+            }
+            userSelectedItems[itemName].qty += amount;
+            if (userSelectedItems[itemName].qty < 0) {
+                userSelectedItems[itemName].qty = 0;
+            }
+            refreshAllInputs();
+        }
+
+        function inputQty(itemName, unitPrice, value) {
+            let val = parseInt(value);
+            if (isNaN(val) || val < 0) val = 0;
+            if (!userSelectedItems[itemName]) {
+                userSelectedItems[itemName] = { price: unitPrice, qty: 0 };
+            }
+            userSelectedItems[itemName].qty = val;
+        }
+
+        function refreshAllInputs() {
+            for (let itemName in userSelectedItems) {
+                let safeId = itemName.replace(/[\s\(\)\/]/g, '_');
+                let inputEl = document.getElementById(`qty_${safeId}`);
+                if (inputEl) {
+                    inputEl.value = userSelectedItems[itemName].qty;
+                }
+            }
+        }
+
+        window.addEventListener('scroll', () => {
+            let sections = document.querySelectorAll('.category-section');
+            let scrollPos = window.scrollY + 160;
+
+            sections.forEach(section => {
+                let top = section.offsetTop;
+                let height = section.offsetHeight;
+                let id = section.getAttribute('id').replace('section_', '');
+
+                if (scrollPos >= top && scrollPos < top + height) {
+                    document.querySelectorAll('#categoryTabs button').forEach(btn => {
+                        btn.classList.remove('bg-emerald-600', 'text-white');
+                        btn.classList.add('bg-gray-800', 'text-gray-300');
+                    });
+                    let activeBtn = document.getElementById(`tab_${id}`);
+                    if (activeBtn) {
+                        activeBtn.classList.remove('bg-gray-800', 'text-gray-300');
+                        activeBtn.classList.add('bg-emerald-600', 'text-white');
+                        activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                    }
+                }
+            });
+        });
+
+        async function submitAllOrders() {
+            let storeNames = {
+                "store_01": "明美快餐",
+                "store_02": "彰濱現炒",
+                "store_03": "王牌飯包",
+                "store_04": "偶鵝嚐嚐鹿港店",
+                "store_05": "蒙坤泰式私廚",
+                "store_06": "員湘園"
+            };
+            let storeName = storeNames[currentStoreId] || "未知店家";
+            let note = document.getElementById("noteInput").value;
+
+            let itemsToSubmit = [];
+            for (let itemName in userSelectedItems) {
+                if (userSelectedItems[itemName].qty > 0) {
+                    itemsToSubmit.push({
                         item: itemName,
-                        quantity: orderCounts[itemName],
-                        unitPrice: unitPrice
+                        quantity: userSelectedItems[itemName].qty,
+                        unitPrice: userSelectedItems[itemName].price
                     });
                 }
             }
 
-            if (selectedItems.length === 0) {
-                alert("請至少選擇一項餐點！");
+            if (itemsToSubmit.length === 0) {
+                alert("請至少選擇一項餐點並填寫數量！");
                 return;
             }
 
-            alert("正在送出訂單...");
+            let successCount = 0;
+            for (let i = 0; i < itemsToSubmit.length; i++) {
+                let orderData = {
+                    targetDate: targetDate,
+                    storeId: currentStoreId,
+                    storeName: storeName,
+                    lineName: currentUser.name,
+                    item: itemsToSubmit[i].item,
+                    quantity: itemsToSubmit[i].quantity,
+                    unitPrice: itemsToSubmit[i].unitPrice,
+                    note: note
+                };
 
-            try {
-                for (let data of selectedItems) {
-                    let payload = {
-                        targetDate: targetDate,
-                        storeId: currentStoreId,
-                        storeName: currentStoreName,
-                        lineName: currentUserName,
-                        item: data.item,
-                        quantity: data.quantity,
-                        unitPrice: data.unitPrice,
-                        note: note
-                    };
-
-                    await fetch(GAS_API_URL, {
+                try {
+                    let res = await fetch(GAS_API_URL, {
                         method: "POST",
-                        mode: "no-cors",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(orderData)
                     });
+                    let result = await res.json();
+                    if (result.status === "success") {
+                        successCount++;
+                    }
+                } catch (err) {
+                    console.error(err);
                 }
-                alert("🎉 訂單全部送出成功！已寫入試算表！");
-                location.reload();
-            } catch (e) {
-                alert("送出失敗：" + e.message);
+            }
+
+            if (successCount === itemsToSubmit.length) {
+                alert(`🎉 成功送出 ${successCount} 項不同餐點！已記錄至試算表。`);
+                userSelectedItems = {}; 
+                document.getElementById("noteInput").value = "";
+                document.querySelectorAll('input[id^="qty_"]').forEach(input => input.value = 0);
+            } else {
+                alert("部分餐點送出失敗，請檢查網路後再試一次。");
             }
         }
     </script>
