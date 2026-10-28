@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LIFF 認證測試</title>
-    <!-- 引入 LINE LIFF SDK -->
+    <!-- 引入 LINE LIFF SDK (加上 defer 確保順序) -->
     <script charset="utf-8" src="https://static.line-scdn.net/sdk/v2/liff.js"></script>
     <style>
         body { font-family: sans-serif; padding: 20px; background: #1a1a1a; color: #fff; text-align: center; }
@@ -17,15 +17,21 @@
     <h2>🧪 店小二 LIFF 身分認證測試</h2>
     <div class="box">
         <p>目前狀態：</p>
-        <p id="userStatus" class="status">正在進行 LIFF 初始化...</p>
+        <p id="userStatus" class="status">正在載入 SDK 與初始化...</p>
         <p id="errorLog" class="error"></p>
     </div>
 
     <script>
         const LIFF_ID = "2012191744-V9c1IIFW";
 
-        window.onload = async function() {
+        // 等待所有資源 (包含外連 JS SDK) 載入完畢
+        window.addEventListener('load', async function() {
             try {
+                // 檢查 LIFF SDK 是否正確載入
+                if (typeof liff === 'undefined') {
+                    throw new Error("LINE LIFF SDK 載入失敗，請檢查網路連線或重新整理頁面。");
+                }
+
                 // 1. 初始化 LIFF
                 await liff.init({ liffId: LIFF_ID });
                 
@@ -46,10 +52,9 @@
             } catch (err) {
                 console.error("LIFF Error:", err);
                 document.getElementById('userStatus').innerText = "❌ LIFF 認證失敗！";
-                // 顯示精準的錯誤代碼與訊息
                 document.getElementById('errorLog').innerText = "詳細錯誤：\n" + (err.message || JSON.stringify(err));
             }
-        };
+        });
     </script>
 </body>
 </html>
