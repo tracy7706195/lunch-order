@@ -1,346 +1,70 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="scroll-smooth">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>店小二跨日點餐系統</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>LIFF 獨立測試頁面</title>
+    <!-- 引入 LINE LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        /* 隱藏滾動條但保持滾動功能 */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { font-family: sans-serif; background: #111; color: #fff; padding: 30px; text-align: center; }
+        .card { background: #222; padding: 20px; border-radius: 12px; max-width: 400px; margin: 0 auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .status { font-size: 16px; color: #4ade80; margin-top: 15px; word-break: break-all; }
+        .error { color: #f87171; }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen pb-24">
+<body>
 
-    <!-- 頂部固定標題列 -->
-    <header class="bg-emerald-600 p-4 text-center shadow-md sticky top-0 z-50">
-        <h1 class="text-xl font-bold">🍱 店小二點餐系統</h1>
-        <p id="userWelcome" class="text-xs text-emerald-100 mt-0.5">目前登入：身分驗證中...</p>
-    </header>
+    <div class="card">
+        <h2>🧪 LIFF 認證診斷測試</h2>
+        <p class="status" id="testStatus">正在準備初始化...</p>
+    </div>
 
-    <!-- 主要內容區 -->
-    <main class="max-w-md mx-auto p-4 space-y-4">
-        
-        <!-- 店家與日期資訊區 -->
-        <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-sm space-y-3">
-            <div class="flex justify-between items-center">
-                <span class="text-xs bg-emerald-900 text-emerald-300 px-2 py-1 rounded font-semibold">快速點餐模式</span>
-                <span id="displayTargetDate" class="text-sm font-bold text-gray-300">目標日期：載入中...</span>
-            </div>
-            
-            <div>
-                <label class="block text-xs font-bold text-gray-400 mb-1">切換店家：</label>
-                <select id="storeSelect" onchange="changeStore(this.value)" class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg text-sm font-bold text-white focus:outline-none focus:border-emerald-500">
-                    <option value="store_01">明美快餐</option>
-                    <option value="store_02">彰濱現炒</option>
-                    <option value="store_03">王牌飯包</option>
-                    <option value="store_04">偶鵝嚐嚐鹿港店</option>
-                    <option value="store_05">蒙坤泰式私廚</option>
-                    <option value="store_06">員湘園</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- 懸浮式分類導覽列 -->
-        <div id="categoryTabsContainer" class="sticky top-[73px] z-40 bg-gray-900/95 backdrop-blur py-2 border-b border-gray-700">
-            <div id="categoryTabs" class="flex overflow-x-auto space-x-2 no-scrollbar px-1">
-                <!-- 動態生成分類按鈕 -->
-            </div>
-        </div>
-
-        <!-- 全菜單展開區 -->
-        <div id="menuSectionsContainer" class="space-y-6">
-            <p class="text-gray-400 text-center py-8">載入菜單中...</p>
-        </div>
-
-        <!-- 底部備註與送出區 -->
-        <div class="fixed bottom-0 left-0 right-0 bg-gray-800/95 backdrop-blur border-t border-gray-700 p-4 z-50">
-            <div class="max-w-md mx-auto space-y-2">
-                <input type="text" id="noteInput" placeholder="整體備註（例如：不要辣、飯少）" class="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-xs text-white focus:outline-none focus:border-emerald-500">
-                <button onclick="submitAllOrders()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg transition duration-200 text-sm">
-                    確認送出所有勾選餐點 🚀
-                </button>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- JavaScript 邏輯 -->
     <script>
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxQcZewSGx0jWMK75CGCElJUY3QCeBA-VWbWpZhgc1ek0e_0ub5KSGKplltVaSuEWhTyQ/exec";
+        // 您的真實 LIFF ID
         const LIFF_ID = "2012191744-V9c1IIFW";
 
-        let currentUser = { name: "訪客模式", id: "U_TEST" };
-        let currentStoreId = "store_01";
-        let targetDate = new Date().toISOString().split('T')[0];
-        
-        let menuDataGrouped = {}; 
-        let userSelectedItems = {}; 
+        window.addEventListener('load', async function() {
+            let statusEl = document.getElementById('testStatus');
 
-        window.onload = async function() {
-            // 1. 初始化 LIFF 抓取身分
-            await initializeLiff();
-
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get("store")) {
-                currentStoreId = urlParams.get("store");
-                let storeSelectEl = document.getElementById("storeSelect");
-                if(storeSelectEl) storeSelectEl.value = currentStoreId;
-            }
-            if (urlParams.get("date")) targetDate = urlParams.get("date");
-
-            document.getElementById("displayTargetDate").innerText = `目標日期：${targetDate}`;
-            await loadMenu();
-        };
-
-        async function initializeLiff() {
             try {
-                if (typeof liff !== 'undefined') {
-                    await liff.init({ liffId: LIFF_ID });
-                    if (liff.isInClient()) {
-                        if (!liff.isLoggedIn()) {
-                            liff.login();
-                            return;
-                        }
-                        let profile = await liff.getProfile();
-                        currentUser.name = profile.displayName;
-                        currentUser.id = profile.userId;
-                    } else {
-                        currentUser.name = "電腦測試同仁";
-                    }
+                // 1. 檢查 SDK 是否載入
+                if (typeof liff === 'undefined') {
+                    throw new Error("【失敗】window.liff 物件不存在，SDK 未成功載入。");
                 }
-            } catch (e) {
-                console.warn("LIFF 初始化略過：", e);
-                currentUser.name = "訪客模式";
-            }
-            document.getElementById("userWelcome").innerText = `目前登入：${currentUser.name}`;
-        }
+                statusEl.innerText = "1. SDK 載入成功，正在執行 liff.init()...";
 
-        // 切換店家
-        function changeStore(newStoreId) {
-            currentStoreId = newStoreId;
-            userSelectedItems = {}; 
-            loadMenu();
-        }
+                // 2. 初始化 LIFF
+                await liff.init({ liffId: LIFF_ID });
+                statusEl.innerText = "2. liff.init() 成功！檢查登入狀態...";
 
-        // 撈取菜單並依類別分組
-        async function loadMenu() {
-            let container = document.getElementById("menuSectionsContainer");
-            container.innerHTML = '<p class="text-gray-400 text-center py-8">載入菜單中...</p>';
+                // 3. 檢查環境與登入
+                if (liff.isInClient()) {
+                    statusEl.innerText = "3. 偵測到在 LINE App 內，檢查是否登入...";
+                    if (!liff.isLoggedIn()) {
+                        statusEl.innerText = "4. 尚未登入，準備導向 LINE 登入頁面...";
+                        liff.login();
+                        return;
+                    }
 
-            try {
-                let res = await fetch(`${GAS_API_URL}?action=getMenu&storeId=${currentStoreId}`);
-                let result = await res.json();
-                
-                if (result.status === "success") {
-                    let rawData = result.data;
-                    menuDataGrouped = {};
+                    // 4. 取得 Profile
+                    statusEl.innerText = "4. 正在取得使用者 Profile...";
+                    let profile = await liff.getProfile();
                     
-                    rawData.forEach(item => {
-                        let cat = item.category || "其他";
-                        if (!menuDataGrouped[cat]) {
-                            menuDataGrouped[cat] = [];
-                        }
-                        menuDataGrouped[cat].push(item);
-                    });
-
-                    let categories = Object.keys(menuDataGrouped);
-                    if (categories.length > 0) {
-                        renderTabs(categories);
-                        renderMenuSections(categories);
-                    } else {
-                        document.getElementById("categoryTabs").innerHTML = "";
-                        container.innerHTML = '<p class="text-gray-400 text-center py-8">此店家目前尚無菜單資料</p>';
-                    }
+                    statusEl.innerHTML = `🎉 <strong>認證完全成功！</strong><br>LINE 顯示名稱：${profile.displayName}<br>User ID：${profile.userId}`;
                 } else {
-                    alert("讀取菜單失敗：" + result.message);
+                    statusEl.innerText = "⚠️ 目前是在電腦或一般外部瀏覽器開啟，無法直接抓取 LINE 身分（屬於正常現象）。";
                 }
-            } catch (e) {
-                console.error(e);
-                container.innerHTML = '<p class="text-red-400 text-center py-8">無法連線至試算表</p>';
+
+            } catch (err) {
+                console.error("LIFF 測試失敗:", err);
+                statusEl.className = "status error";
+                statusEl.innerHTML = `❌ 初始化失敗<br>${err.message || JSON.stringify(err)}`;
+                
+                // 強制彈窗讓手機立刻看到錯誤原因
+                alert("LIFF 測試失敗原因: " + (err.message || JSON.stringify(err)));
             }
-        }
-
-        function renderTabs(categories) {
-            let tabsHtml = "";
-            categories.forEach((cat, index) => {
-                let activeClass = index === 0 ? "bg-emerald-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700";
-                tabsHtml += `
-                    <button id="tab_${cat}" onclick="scrollToCategory('${cat}')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition ${activeClass} border border-gray-700">
-                        ${cat}
-                    </button>
-                `;
-            });
-            document.getElementById("categoryTabs").innerHTML = tabsHtml;
-        }
-
-        function scrollToCategory(cat) {
-            let sectionEl = document.getElementById(`section_${cat}`);
-            if (sectionEl) {
-                let headerOffset = 130;
-                let elementPosition = sectionEl.getBoundingClientRect().top;
-                let offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-            }
-        }
-
-        function renderMenuSections(categories) {
-            let container = document.getElementById("menuSectionsContainer");
-            let html = "";
-
-            categories.forEach(cat => {
-                let items = menuDataGrouped[cat];
-                html += `
-                    <div id="section_${cat}" class="category-section space-y-3 pt-2">
-                        <h3 class="text-emerald-400 font-bold text-base border-b border-gray-700 pb-1 sticky top-[120px] bg-gray-900/90 py-1 z-30">${cat}</h3>
-                        <div class="space-y-2.5">
-                `;
-
-                items.forEach(item => {
-                    let currentQty = userSelectedItems[item.itemName] ? userSelectedItems[item.itemName].qty : 0;
-                    let safeId = item.itemName.replace(/[\s\(\)\/]/g, '_');
-
-                    html += `
-                        <div class="flex items-center justify-between bg-gray-800 p-3 rounded-xl border border-gray-700 shadow-sm">
-                            <div class="flex-1 pr-2">
-                                <div class="font-bold text-white text-sm">${item.itemName}</div>
-                                <div class="text-xs text-emerald-400 font-semibold mt-0.5">$${item.unitPrice}</div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <button type="button" onclick="updateQty('${item.itemName}', ${item.unitPrice}, -1)" class="w-8 h-8 bg-gray-700 rounded-lg font-bold text-sm hover:bg-gray-600">-</button>
-                                <input type="number" id="qty_${safeId}" value="${currentQty}" min="0" oninput="inputQty('${item.itemName}', ${item.unitPrice}, this.value)" class="w-12 text-center font-bold text-sm bg-gray-700 border border-gray-600 rounded-lg p-1 text-white">
-                                <button type="button" onclick="updateQty('${item.itemName}', ${item.unitPrice}, 1)" class="w-8 h-8 bg-gray-700 rounded-lg font-bold text-sm hover:bg-gray-600">+</button>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                html += `</div></div>`;
-            });
-
-            container.innerHTML = html;
-        }
-
-        function updateQty(itemName, unitPrice, amount) {
-            if (!userSelectedItems[itemName]) {
-                userSelectedItems[itemName] = { price: unitPrice, qty: 0 };
-            }
-            userSelectedItems[itemName].qty += amount;
-            if (userSelectedItems[itemName].qty < 0) {
-                userSelectedItems[itemName].qty = 0;
-            }
-            refreshAllInputs();
-        }
-
-        function inputQty(itemName, unitPrice, value) {
-            let val = parseInt(value);
-            if (isNaN(val) || val < 0) val = 0;
-            if (!userSelectedItems[itemName]) {
-                userSelectedItems[itemName] = { price: unitPrice, qty: 0 };
-            }
-            userSelectedItems[itemName].qty = val;
-        }
-
-        function refreshAllInputs() {
-            for (let itemName in userSelectedItems) {
-                let safeId = itemName.replace(/[\s\(\)\/]/g, '_');
-                let inputEl = document.getElementById(`qty_${safeId}`);
-                if (inputEl) {
-                    inputEl.value = userSelectedItems[itemName].qty;
-                }
-            }
-        }
-
-        window.addEventListener('scroll', () => {
-            let sections = document.querySelectorAll('.category-section');
-            let scrollPos = window.scrollY + 160;
-
-            sections.forEach(section => {
-                let top = section.offsetTop;
-                let height = section.offsetHeight;
-                let id = section.getAttribute('id').replace('section_', '');
-
-                if (scrollPos >= top && scrollPos < top + height) {
-                    document.querySelectorAll('#categoryTabs button').forEach(btn => {
-                        btn.classList.remove('bg-emerald-600', 'text-white');
-                        btn.classList.add('bg-gray-800', 'text-gray-300');
-                    });
-                    let activeBtn = document.getElementById(`tab_${id}`);
-                    if (activeBtn) {
-                        activeBtn.classList.remove('bg-gray-800', 'text-gray-300');
-                        activeBtn.classList.add('bg-emerald-600', 'text-white');
-                        activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                    }
-                }
-            });
         });
-
-        async function submitAllOrders() {
-            let storeNames = {
-                "store_01": "明美快餐",
-                "store_02": "彰濱現炒",
-                "store_03": "王牌飯包",
-                "store_04": "偶鵝嚐嚐鹿港店",
-                "store_05": "蒙坤泰式私廚",
-                "store_06": "員湘園"
-            };
-            let storeName = storeNames[currentStoreId] || "未知店家";
-            let note = document.getElementById("noteInput").value;
-
-            let itemsToSubmit = [];
-            for (let itemName in userSelectedItems) {
-                if (userSelectedItems[itemName].qty > 0) {
-                    itemsToSubmit.push({
-                        item: itemName,
-                        quantity: userSelectedItems[itemName].qty,
-                        unitPrice: userSelectedItems[itemName].price
-                    });
-                }
-            }
-
-            if (itemsToSubmit.length === 0) {
-                alert("請至少選擇一項餐點並填寫數量！");
-                return;
-            }
-
-            let successCount = 0;
-            for (let i = 0; i < itemsToSubmit.length; i++) {
-                let orderData = {
-                    targetDate: targetDate,
-                    storeId: currentStoreId,
-                    storeName: storeName,
-                    lineName: currentUser.name,
-                    item: itemsToSubmit[i].item,
-                    quantity: itemsToSubmit[i].quantity,
-                    unitPrice: itemsToSubmit[i].unitPrice,
-                    note: note
-                };
-
-                try {
-                    let res = await fetch(GAS_API_URL, {
-                        method: "POST",
-                        body: JSON.stringify(orderData)
-                    });
-                    let result = await res.json();
-                    if (result.status === "success") {
-                        successCount++;
-                    }
-                } catch (err) {
-                    console.error(err);
-                }
-            }
-
-            if (successCount === itemsToSubmit.length) {
-                alert(`🎉 成功送出 ${successCount} 項不同餐點！已記錄至試算表。`);
-                userSelectedItems = {}; 
-                document.getElementById("noteInput").value = "";
-                document.querySelectorAll('input[id^="qty_"]').forEach(input => input.value = 0);
-            } else {
-                alert("部分餐點送出失敗，請檢查網路後再試一次。");
-            }
-        }
     </script>
 </body>
 </html>
