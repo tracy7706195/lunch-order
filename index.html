@@ -1,42 +1,69 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>店小二點餐系統</title>
+    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 LINE LIFF SDK -->
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/sdk/v2/liff.js"></script>
 </head>
-<body class="bg-gray-900 text-white min-h-screen pb-20">
-
-    <header class="bg-emerald-600 p-4 text-center shadow-md">
-        <h1 class="text-xl font-bold">🍱 店小二點餐系統</h1>
-        <p id="userWelcome" class="text-xs text-emerald-100 mt-1">目前登入：LIFF 驗證中...</p>
-    </header>
-
-    <main class="max-w-md mx-auto p-4 space-y-4">
-        <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-sm space-y-3">
-            <div class="text-sm font-bold text-gray-300 text-center" id="displayTargetDate">載入中...</div>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-4 pb-24">
+    <div class="max-w-md mx-auto bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
+        
+        <!-- 標題與認證狀態 -->
+        <div class="text-center space-y-2">
+            <h1 class="text-2xl font-bold text-green-400">🍱 店小二點餐系統</h1>
+            <p id="lineUser" class="text-sm text-green-300 font-bold">正在進行 LINE 認證...</p>
         </div>
-    </main>
+
+        <!-- 參數設定區 -->
+        <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-300">目標日期：</span>
+                <input type="date" id="targetDate" class="bg-gray-700 text-white px-3 py-1 rounded border border-gray-600 text-sm">
+            </div>
+            
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-300">選擇店家：</span>
+                <select id="storeSelect" onchange="changeStore(this.value)" class="bg-gray-700 text-white px-3 py-1.5 rounded border border-gray-600 text-sm w-48">
+                    <option value="">載入店家列表中...</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 菜單列表區 -->
+        <div class="space-y-3">
+            <h2 class="text-sm font-bold text-gray-300 uppercase tracking-wider">菜單列表：</h2>
+            <div id="menuList" class="space-y-2">
+                <div class="text-center text-gray-400 py-4">請等待資料載入...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部固定送出按鈕 -->
+    <div class="fixed bottom-0 left-0 right-0 bg-gray-900/90 p-4 border-t border-gray-700 backdrop-blur">
+        <div class="max-w-md mx-auto">
+            <button onclick="submitOrder()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition duration-200">
+                確認送出所有勾選餐點
+            </button>
+        </div>
+    </div>
 
     <script>
-        // 設定您的真實 LIFF ID
         const LIFF_ID = "2012191744-V9c1IIFW";
-        let currentUser = { name: "訪客模式", id: "" };
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxQcZewSGx0jWMK75CGCElJUY3QCeBA-VWbWpZhgc1ek0e_0ub5KSGKplltVaSuEWhTyQ/exec";
+
+        let currentLineName = "訪客";
+        let menuDataCache = [];
 
         window.onload = async function() {
-            await initializeLiff();
-        };
+            let today = new Date().toISOString().split('T')[0];
+            document.getElementById('targetDate').value = today;
 
-        async function initializeLiff() {
             try {
-                if (typeof liff === 'undefined') {
-                    throw new Error("【錯誤】window.liff 物件不存在，SDK 未成功載入。");
-                }
-
-                // 執行初始化
+                // 1. 先穩定執行 LIFF 認證
                 await liff.init({ liffId: LIFF_ID });
                 
                 if (liff.isInClient()) {
@@ -44,19 +71,140 @@
                         liff.login();
                         return;
                     }
-                    // 抓取 LINE 使用者身分
                     let profile = await liff.getProfile();
-                    currentUser.name = profile.displayName;
-                    currentUser.id = profile.userId;
-                    document.getElementById("userWelcome").innerText = `目前登入：${currentUser.name} (LINE 認證成功)`;
+                    currentLineName = profile.displayName;
+                    document.getElementById('lineUser').innerText = `目前登入：${currentLineName} (LINE 認證成功)`;
                 } else {
-                    document.getElementById("userWelcome").innerText = `目前登入：外部瀏覽器環境`;
+                    currentLineName = "測試同仁(非LINE環境)";
+                    document.getElementById('lineUser').innerText = `目前登入：${currentLineName}`;
                 }
             } catch (err) {
-                console.error("LIFF 初始化錯誤:", err);
-                // 🔴 當發生任何異常時，強制彈窗顯示真正的失敗原因
-                alert("LIFF 認證失敗原因: " + (err.message || JSON.stringify(err)));
-                document.getElementById("userWelcome").innerText = `目前登入：訪客模式 (發生錯誤)`;
+                console.error("LIFF Error:", err);
+                currentLineName = "訪客模式";
+                document.getElementById('lineUser').innerText = `目前登入：${currentLineName} (認證略過)`;
+            }
+
+            // 2. 認證完成後，獨立載入店家清單（避免影響認證畫面）
+            loadStores();
+        };
+
+        // 向 GAS 請求所有店家清單
+        async function loadStores() {
+            try {
+                let response = await fetch(`${GAS_API_URL}?action=getStores`);
+                let result = await response.json();
+                
+                let stores = result.data || [];
+                let selectHtml = '';
+                if (stores.length === 0) {
+                    selectHtml = '<option value="">無可用店家</option>';
+                } else {
+                    stores.forEach((store) => {
+                        selectHtml += `<option value="${store.storeId}">${store.storeName}</option>`;
+                    });
+                }
+                document.getElementById('storeSelect').innerHTML = selectHtml;
+
+                if (stores.length > 0) {
+                    loadMenu(stores[0].storeId);
+                }
+            } catch (err) {
+                console.error("載入店家失敗:", err);
+                document.getElementById('storeSelect').innerHTML = '<option value="">載入失敗</option>';
+            }
+        }
+
+        function changeStore(storeId) {
+            if (storeId) {
+                loadMenu(storeId);
+            }
+        }
+
+        // 向 GAS 請求特定店家的菜單
+        async function loadMenu(storeId) {
+            document.getElementById('menuList').innerHTML = '<div class="text-center text-gray-400 py-4">菜單載入中...</div>';
+            try {
+                let response = await fetch(`${GAS_API_URL}?action=getMenu&storeId=${storeId}`);
+                let result = await response.json();
+                let menuItems = result.data || [];
+                menuDataCache = menuItems;
+
+                let html = '';
+                if (menuItems.length === 0) {
+                    html = '<div class="text-center text-gray-400 py-4">此店家目前無菜單</div>';
+                } else {
+                    menuItems.forEach((item, index) => {
+                        html += `
+                            <div class="bg-gray-700/40 p-3 rounded-lg flex items-center justify-between border border-gray-700">
+                                <div>
+                                    <div class="font-bold text-white">${item.itemName}</div>
+                                    <div class="text-sm text-green-400 font-semibold">$${item.unitPrice}元</div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <input type="number" min="0" value="0" id="qty_${index}" class="w-16 bg-gray-800 text-white text-center rounded border border-gray-600 py-1 text-sm">
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                document.getElementById('menuList').innerHTML = html;
+            } catch (err) {
+                console.error("載入菜單失敗:", err);
+                document.getElementById('menuList').innerHTML = '<div class="text-center text-red-400 py-4">載入菜單發生錯誤</div>';
+            }
+        }
+
+        // 送出訂單至 GAS
+        async function submitOrder() {
+            let targetDate = document.getElementById('targetDate').value;
+            let storeSelect = document.getElementById('storeSelect');
+            let storeId = storeSelect.value;
+            let storeName = storeSelect.options[storeSelect.selectedIndex].text;
+
+            let orderItems = [];
+            menuDataCache.forEach((item, index) => {
+                let qty = parseInt(document.getElementById(`qty_${index}`).value) || 0;
+                if (qty > 0) {
+                    orderItems.push({
+                        itemName: item.itemName,
+                        unitPrice: item.unitPrice,
+                        quantity: qty,
+                        subtotal: qty * item.unitPrice
+                    });
+                }
+            });
+
+            if (orderItems.length === 0) {
+                alert("請至少選擇一項餐點再送出！");
+                return;
+            }
+
+            let postData = {
+                targetDate: targetDate,
+                storeId: storeId,
+                storeName: storeName,
+                lineName: currentLineName,
+                items: orderItems
+            };
+
+            try {
+                let response = await fetch(GAS_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(postData)
+                });
+                let result = await response.json();
+                
+                if (result.status === "success") {
+                    alert("🎉 訂單送出成功！已自動記錄至試算表。");
+                    menuDataCache.forEach((_, index) => {
+                        document.getElementById(`qty_${index}`).value = 0;
+                    });
+                } else {
+                    alert("送出失敗：" + (result.message || "未知錯誤"));
+                }
+            } catch (err) {
+                console.error("送出訂單發生錯誤:", err);
+                alert("網路連線或後端發生錯誤，請稍後再試。");
             }
         }
     </script>
