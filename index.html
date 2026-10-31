@@ -80,10 +80,17 @@
                     document.getElementById('lineUser').innerText = `目前登入：${currentLineName} (非LINE環境)`;
                 }
             } catch (err) {
-                console.error("LIFF 認證錯誤:", err);
-                currentLineName = "訪客模式";
-                document.getElementById('lineUser').innerText = `目前登入：${currentLineName}`;
-            }
+                  console.error("LIFF 認證錯誤:", err);
+
+                  currentLineName = "訪客模式";
+
+                  document.getElementById('lineUser').innerText =
+                    `LINE 認證失敗：${err.message}`;
+
+                  alert(
+                    "LINE 登入失敗！\n錯誤原因：" + err.message
+                  );
+                }
 
             // 【步驟二：當認證流程完全結束後，才安全地觸發店家載入】
             loadStores();
