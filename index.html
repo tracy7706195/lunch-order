@@ -68,9 +68,15 @@
             document.getElementById('targetDate').value = today;
 
             // 【步驟一：百分之百純淨地執行 LINE 認證】
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                
+           
+                try {
+
+  // 檢查 LINE LIFF SDK 是否成功載入
+  if (typeof liff === "undefined") {
+    throw new Error("LIFF SDK 尚未載入，請檢查 SDK 網址");
+  }
+
+  await liff.init({ liffId: LIFF_ID });
                 if (liff.isInClient()) {
                     if (!liff.isLoggedIn()) {
                         liff.login();
