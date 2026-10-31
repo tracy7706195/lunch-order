@@ -28,7 +28,7 @@
             <div class="flex justify-between items-center">
                 <span class="text-sm font-medium text-gray-300">選擇店家：</span>
                 <select id="storeSelect" onchange="changeStore(this.value)" class="bg-gray-700 text-white px-3 py-1.5 rounded border border-gray-600 text-sm w-48">
-                    <option value="">等待認證後載入...</option>
+                    <option value="">等待認證完成...</option>
                 </select>
             </div>
         </div>
@@ -62,8 +62,8 @@
             let today = new Date().toISOString().split('T')[0];
             document.getElementById('targetDate').value = today;
 
+            // 【步驟一：百分之百純淨地執行 LINE 認證】
             try {
-                // 1. 完整且專注地執行原本那套穩定的 LIFF 認證
                 await liff.init({ liffId: LIFF_ID });
                 
                 if (liff.isInClient()) {
@@ -73,18 +73,19 @@
                     }
                     let profile = await liff.getProfile();
                     currentLineName = profile.displayName;
+                    // 成功抓到名字，立刻印在畫面上
                     document.getElementById('lineUser').innerText = `目前登入：${currentLineName} (LINE 認證成功)`;
                 } else {
                     currentLineName = "電腦測試同仁";
                     document.getElementById('lineUser').innerText = `目前登入：${currentLineName} (非LINE環境)`;
                 }
             } catch (err) {
-                console.error("LIFF Error:", err);
+                console.error("LIFF 認證錯誤:", err);
                 currentLineName = "訪客模式";
                 document.getElementById('lineUser').innerText = `目前登入：${currentLineName}`;
             }
 
-            // 2. 認證完成確認無誤後，才呼叫函式去載入店家與菜單
+            // 【步驟二：當認證流程完全結束後，才安全地觸發店家載入】
             loadStores();
         };
 
