@@ -1,54 +1,64 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIFF 認證測試</title>
+    <title>店小二點餐系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 LINE LIFF SDK -->
-    <script charset="utf-8" src="https://static.line-scdn.net/sdk/v2/liff.js"></script>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background: #1a1a1a; color: #fff; text-align: center; }
-        .box { background: #2a2a2a; padding: 20px; border-radius: 10px; margin-top: 20px; }
-        .status { font-size: 18px; color: #4ade80; font-weight: bold; }
-        .error { color: #f87171; word-break: break-all; margin-top: 10px; }
-    </style>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
-<body>
-    <h2>🧪 店小二 LIFF 身分認證測試</h2>
-    <div class="box">
-        <p>目前狀態：</p>
-        <p id="userStatus" class="status">正在進行 LIFF 初始化...</p>
-        <p id="errorLog" class="error"></p>
-    </div>
+<body class="bg-gray-900 text-white min-h-screen pb-20">
+
+    <header class="bg-emerald-600 p-4 text-center shadow-md">
+        <h1 class="text-xl font-bold">🍱 店小二點餐系統</h1>
+        <p id="userWelcome" class="text-xs text-emerald-100 mt-1">目前登入：LIFF 驗證中...</p>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-4">
+        <div class="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-sm space-y-3">
+            <div class="text-sm font-bold text-gray-300 text-center" id="displayTargetDate">載入中...</div>
+        </div>
+    </main>
 
     <script>
+        // 設定您的真實 LIFF ID
         const LIFF_ID = "2012191744-V9c1IIFW";
+        let currentUser = { name: "訪客模式", id: "" };
 
         window.onload = async function() {
+            await initializeLiff();
+        };
+
+        async function initializeLiff() {
             try {
-                // 1. 初始化 LIFF
+                if (typeof liff === 'undefined') {
+                    throw new Error("【錯誤】window.liff 物件不存在，SDK 未成功載入。");
+                }
+
+                // 執行初始化
                 await liff.init({ liffId: LIFF_ID });
                 
-                // 2. 判斷是否在 LINE App 內
                 if (liff.isInClient()) {
                     if (!liff.isLoggedIn()) {
-                        document.getElementById('userStatus').innerText = "未登入，準備前往 LINE 授權頁面...";
                         liff.login();
                         return;
                     }
-                    
-                    // 3. 抓取 LINE 身分
+                    // 抓取 LINE 使用者身分
                     let profile = await liff.getProfile();
-                    document.getElementById('userStatus').innerText = "🎉 認證成功！名字：" + profile.displayName;
+                    currentUser.name = profile.displayName;
+                    currentUser.id = profile.userId;
+                    document.getElementById("userWelcome").innerText = `目前登入：${currentUser.name} (LINE 認證成功)`;
                 } else {
-                    document.getElementById('userStatus').innerText = "⚠️ 目前在電腦/一般瀏覽器開啟，請使用手機 LINE 點擊 LIFF 連結測試！";
+                    document.getElementById("userWelcome").innerText = `目前登入：外部瀏覽器環境`;
                 }
             } catch (err) {
-                console.error("LIFF Error:", err);
-                document.getElementById('userStatus').innerText = "❌ LIFF 認證失敗！";
-                document.getElementById('errorLog').innerText = "詳細錯誤：\n" + (err.message || JSON.stringify(err));
+                console.error("LIFF 初始化錯誤:", err);
+                // 🔴 當發生任何異常時，強制彈窗顯示真正的失敗原因
+                alert("LIFF 認證失敗原因: " + (err.message || JSON.stringify(err)));
+                document.getElementById("userWelcome").innerText = `目前登入：訪客模式 (發生錯誤)`;
             }
-        };
+        }
     </script>
 </body>
 </html>
