@@ -28,7 +28,7 @@
             <div class="flex justify-between items-center">
                 <span class="text-sm font-medium text-gray-300">選擇店家：</span>
                 <select id="storeSelect" onchange="changeStore(this.value)" class="bg-gray-700 text-white px-3 py-1.5 rounded border border-gray-600 text-sm w-48">
-                    <option value="">載入店家列表中...</option>
+                    <option value="">等待認證後載入...</option>
                 </select>
             </div>
         </div>
@@ -37,7 +37,7 @@
         <div class="space-y-3">
             <h2 class="text-sm font-bold text-gray-300 uppercase tracking-wider">菜單列表：</h2>
             <div id="menuList" class="space-y-2">
-                <div class="text-center text-gray-400 py-4">請等待資料載入...</div>
+                <div class="text-center text-gray-400 py-4">請等待認證完成...</div>
             </div>
         </div>
     </div>
@@ -63,7 +63,7 @@
             document.getElementById('targetDate').value = today;
 
             try {
-                // 1. 先穩定執行 LIFF 認證
+                // 1. 完整且專注地執行原本那套穩定的 LIFF 認證
                 await liff.init({ liffId: LIFF_ID });
                 
                 if (liff.isInClient()) {
@@ -75,16 +75,16 @@
                     currentLineName = profile.displayName;
                     document.getElementById('lineUser').innerText = `目前登入：${currentLineName} (LINE 認證成功)`;
                 } else {
-                    currentLineName = "測試同仁(非LINE環境)";
-                    document.getElementById('lineUser').innerText = `目前登入：${currentLineName}`;
+                    currentLineName = "電腦測試同仁";
+                    document.getElementById('lineUser').innerText = `目前登入：${currentLineName} (非LINE環境)`;
                 }
             } catch (err) {
                 console.error("LIFF Error:", err);
                 currentLineName = "訪客模式";
-                document.getElementById('lineUser').innerText = `目前登入：${currentLineName} (認證略過)`;
+                document.getElementById('lineUser').innerText = `目前登入：${currentLineName}`;
             }
 
-            // 2. 認證完成後，獨立載入店家清單（避免影響認證畫面）
+            // 2. 認證完成確認無誤後，才呼叫函式去載入店家與菜單
             loadStores();
         };
 
