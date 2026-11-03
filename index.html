@@ -1,231 +1,309 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>店小二點餐系統</title>
-    <!-- 引入 Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 LINE LIFF SDK -->
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <title>店小二點餐系統</title>
 
-  <script
-    charset="utf-8"
-    src="https://static.line-scdn.net/liff/edge/2/sdk.js"
-  </script>
+  <!-- LINE LIFF SDK -->
+  <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 18px 14px 110px;
+      background: #111827; color: #f9fafb;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .wrap {
+      width: 100%; max-width: 520px; margin: 0 auto;
+      padding: 22px; background: #1f2937; border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.22);
+    }
+    h1 { margin: 0; color: #4ade80; font-size: 25px; text-align: center; }
+    .status { margin: 10px 0 20px; text-align: center; color: #86efac; font-size: 14px; }
+    .status.error { color: #fca5a5; }
+    .panel { padding: 14px; margin-bottom: 20px; background: #374151; border-radius: 12px; }
+    .field { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 9px 0; }
+    label { color: #d1d5db; font-size: 14px; }
+    input, select {
+      min-width: 0; padding: 9px 10px; color: white;
+      background: #1f2937; border: 1px solid #6b7280; border-radius: 8px;
+      font-size: 15px;
+    }
+    #storeSelect { width: 62%; }
+    h2 { margin: 0 0 12px; color: #d1d5db; font-size: 15px; }
+    .menu-item {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin: 9px 0; padding: 13px;
+      background: #374151; border: 1px solid #4b5563; border-radius: 10px;
+    }
+    .item-name { font-weight: 700; overflow-wrap: anywhere; }
+    .price { margin-top: 5px; color: #4ade80; font-size: 14px; }
+    .qty { width: 76px; text-align: center; }
+    .message { padding: 18px 8px; color: #9ca3af; text-align: center; }
+    .bottom {
+      position: fixed; z-index: 5; right: 0; bottom: 0; left: 0;
+      padding: 13px 16px calc(13px + env(safe-area-inset-bottom));
+      background: rgba(17,24,39,.96); border-top: 1px solid #374151;
+    }
+    .bottom-inner { max-width: 520px; margin: auto; }
+    button {
+      width: 100%; padding: 15px; color: #052e16; background: #4ade80;
+      border: 0; border-radius: 12px; font-size: 17px; font-weight: 800;
+    }
+    button:disabled { opacity: .55; }
+    .total { margin: 0 0 9px; text-align: right; color: #d1d5db; font-size: 14px; }
+  </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-4 pb-24">
-    <div class="max-w-md mx-auto bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
-        
-        <!-- 標題與認證狀態 -->
-        <div class="text-center space-y-2">
-            <h1 class="text-2xl font-bold text-green-400">🍱 店小二點餐系統</h1>
-            <p id="lineUser" class="text-sm text-green-300 font-bold">正在進行 LINE 認證...</p>
-        </div>
 
-        <!-- 參數設定區 -->
-        <div class="bg-gray-700/50 p-4 rounded-lg space-y-3">
-            <div class="flex justify-between items-center">
-                <span class="text-sm font-medium text-gray-300">目標日期：</span>
-                <input type="date" id="targetDate" class="bg-gray-700 text-white px-3 py-1 rounded border border-gray-600 text-sm">
-            </div>
-            
-            <div class="flex justify-between items-center">
-                <span class="text-sm font-medium text-gray-300">選擇店家：</span>
-                <select id="storeSelect" onchange="changeStore(this.value)" class="bg-gray-700 text-white px-3 py-1.5 rounded border border-gray-600 text-sm w-48">
-                    <option value="">等待認證完成...</option>
-                </select>
-            </div>
-        </div>
+<body>
+  <main class="wrap">
+    <h1>🍱 店小二點餐系統</h1>
+    <p id="lineUser" class="status">正在確認 LINE 登入狀態...</p>
 
-        <!-- 菜單列表區 -->
-        <div class="space-y-3">
-            <h2 class="text-sm font-bold text-gray-300 uppercase tracking-wider">菜單列表：</h2>
-            <div id="menuList" class="space-y-2">
-                <div class="text-center text-gray-400 py-4">請等待認證完成...</div>
-            </div>
-        </div>
+    <section class="panel">
+      <div class="field">
+        <label for="targetDate">目標日期：</label>
+        <input type="date" id="targetDate">
+      </div>
+      <div class="field">
+        <label for="storeSelect">選擇店家：</label>
+        <select id="storeSelect" disabled>
+          <option value="">店家載入中...</option>
+        </select>
+      </div>
+    </section>
+
+    <section>
+      <h2>菜單列表</h2>
+      <div id="menuList" class="message">正在載入菜單...</div>
+    </section>
+  </main>
+
+  <footer class="bottom">
+    <div class="bottom-inner">
+      <p id="orderTotal" class="total">目前合計：$0</p>
+      <button id="submitButton" type="button">確認送出訂單</button>
     </div>
+  </footer>
 
-    <!-- 底部固定送出按鈕 -->
-    <div class="fixed bottom-0 left-0 right-0 bg-gray-900/90 p-4 border-t border-gray-700 backdrop-blur">
-        <div class="max-w-md mx-auto">
-            <button onclick="submitOrder()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition duration-200">
-                確認送出所有勾選餐點
-            </button>
-        </div>
-    </div>
+  <script>
+    "use strict";
 
-    <script>
-        const LIFF_ID = "2012191744-V9c1IIFW";
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxQcZewSGx0jWMK75CGCElJUY3QCeBA-VWbWpZhgc1ek0e_0ub5KSGKplltVaSuEWhTyQ/exec";
+    const LIFF_ID = "2012191744-V9c1IIFW";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxQcZewSGx0jWMK75CGCElJUY3QCeBA-VWbWpZhgc1ek0e_0ub5KSGKplltVaSuEWhTyQ/exec";
 
-        let currentLineName = "訪客";
-        let menuDataCache = [];
+    let currentLineName = "訪客";
+    let menuDataCache = [];
 
-        window.onload = async function() {
-            let today = new Date().toISOString().split('T')[0];
-            document.getElementById('targetDate').value = today;
+    const $ = id => document.getElementById(id);
 
-            // 【步驟一：百分之百純淨地執行 LINE 認證】
-           
-                try {
+    document.addEventListener("DOMContentLoaded", initApp);
 
-  // 檢查 LINE LIFF SDK 是否成功載入
-  if (typeof liff === "undefined") {
-    throw new Error("LIFF SDK 尚未載入，請檢查 SDK 網址");
-  }
+    async function initApp() {
+      $("targetDate").value = getLocalDateString();
+      $("storeSelect").addEventListener("change", event => loadMenu(event.target.value));
+      $("submitButton").addEventListener("click", submitOrder);
 
-  await liff.init({ liffId: LIFF_ID });
-                if (liff.isInClient()) {
-                    if (!liff.isLoggedIn()) {
-                        liff.login();
-                        return;
-                    }
-                    let profile = await liff.getProfile();
-                    currentLineName = profile.displayName;
-                    // 成功抓到名字，立刻印在畫面上
-                    document.getElementById('lineUser').innerText = `目前登入：${currentLineName} (LINE 認證成功)`;
-                } else {
-                    currentLineName = "電腦測試同仁";
-                    document.getElementById('lineUser').innerText = `目前登入：${currentLineName} (非LINE環境)`;
-                }
-            } catch (err) {
-                  console.error("LIFF 認證錯誤:", err);
+      // 店家與菜單載入不依賴 LIFF 成功與否
+      const storesTask = loadStores();
+      await initLiff();
+      await storesTask;
+    }
 
-                  currentLineName = "訪客模式";
+    function getLocalDateString() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
 
-                  document.getElementById('lineUser').innerText =
-                    `LINE 認證失敗：${err.message}`;
+    function setLineStatus(message, isError = false) {
+      $("lineUser").textContent = message;
+      $("lineUser").classList.toggle("error", isError);
+    }
 
-                  alert(
-                    "LINE 登入失敗！\n錯誤原因：" + err.message
-                  );
-                }
-
-            // 【步驟二：當認證流程完全結束後，才安全地觸發店家載入】
-            loadStores();
-        };
-
-        // 向 GAS 請求所有店家清單
-        async function loadStores() {
-            try {
-                let response = await fetch(`${GAS_API_URL}?action=getStores`);
-                let result = await response.json();
-                
-                let stores = result.data || [];
-                let selectHtml = '';
-                if (stores.length === 0) {
-                    selectHtml = '<option value="">無可用店家</option>';
-                } else {
-                    stores.forEach((store) => {
-                        selectHtml += `<option value="${store.storeId}">${store.storeName}</option>`;
-                    });
-                }
-                document.getElementById('storeSelect').innerHTML = selectHtml;
-
-                if (stores.length > 0) {
-                    loadMenu(stores[0].storeId);
-                }
-            } catch (err) {
-                console.error("載入店家失敗:", err);
-                document.getElementById('storeSelect').innerHTML = '<option value="">載入失敗</option>';
-            }
+    async function initLiff() {
+      try {
+        if (typeof window.liff === "undefined") {
+          throw new Error("LIFF SDK 沒有成功載入。請確認網路或 SDK CDN。");
         }
 
-        function changeStore(storeId) {
-            if (storeId) {
-                loadMenu(storeId);
-            }
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isInClient()) {
+          currentLineName = "瀏覽器訪客";
+          setLineStatus("目前不是從 LINE 內開啟；無法讀取 LINE 名稱。", true);
+          return;
         }
 
-        // 向 GAS 請求特定店家的菜單
-        async function loadMenu(storeId) {
-            document.getElementById('menuList').innerHTML = '<div class="text-center text-gray-400 py-4">菜單載入中...</div>';
-            try {
-                let response = await fetch(`${GAS_API_URL}?action=getMenu&storeId=${storeId}`);
-                let result = await response.json();
-                let menuItems = result.data || [];
-                menuDataCache = menuItems;
-
-                let html = '';
-                if (menuItems.length === 0) {
-                    html = '<div class="text-center text-gray-400 py-4">此店家目前無菜單</div>';
-                } else {
-                    menuItems.forEach((item, index) => {
-                        html += `
-                            <div class="bg-gray-700/40 p-3 rounded-lg flex items-center justify-between border border-gray-700">
-                                <div>
-                                    <div class="font-bold text-white">${item.itemName}</div>
-                                    <div class="text-sm text-green-400 font-semibold">$${item.unitPrice}元</div>
-                                </div>
-                                <div class="flex items-center space-x-2">
-                                    <input type="number" min="0" value="0" id="qty_${index}" class="w-16 bg-gray-800 text-white text-center rounded border border-gray-600 py-1 text-sm">
-                                </div>
-                            </div>
-                        `;
-                    });
-                }
-                document.getElementById('menuList').innerHTML = html;
-            } catch (err) {
-                console.error("載入菜單失敗:", err);
-                document.getElementById('menuList').innerHTML = '<div class="text-center text-red-400 py-4">載入菜單發生錯誤</div>';
-            }
+        if (!liff.isLoggedIn()) {
+          setLineStatus("正在前往 LINE 登入...");
+          liff.login({ redirectUri: window.location.href });
+          return;
         }
 
-        // 送出訂單至 GAS
-        async function submitOrder() {
-            let targetDate = document.getElementById('targetDate').value;
-            let storeSelect = document.getElementById('storeSelect');
-            let storeId = storeSelect.value;
-            let storeName = storeSelect.options[storeSelect.selectedIndex].text;
+        const profile = await liff.getProfile();
+        currentLineName = profile.displayName || "LINE使用者";
+        setLineStatus(`目前登入：${currentLineName}（LINE 認證成功）`);
+      } catch (error) {
+        console.error("LIFF 初始化失敗：", error);
+        currentLineName = "訪客";
+        setLineStatus(`LINE 認證未完成：${error.message || error}`, true);
+      }
+    }
 
-            let orderItems = [];
-            menuDataCache.forEach((item, index) => {
-                let qty = parseInt(document.getElementById(`qty_${index}`).value) || 0;
-                if (qty > 0) {
-                    orderItems.push({
-                        itemName: item.itemName,
-                        unitPrice: item.unitPrice,
-                        quantity: qty,
-                        subtotal: qty * item.unitPrice
-                    });
-                }
-            });
+    async function apiGet(params) {
+      const url = new URL(GAS_API_URL);
+      Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+      const response = await fetch(url.toString(), { method: "GET", redirect: "follow" });
+      if (!response.ok) throw new Error(`伺服器回應 ${response.status}`);
+      const result = await response.json();
+      if (result.status !== "success") throw new Error(result.message || "讀取資料失敗");
+      return result;
+    }
 
-            if (orderItems.length === 0) {
-                alert("請至少選擇一項餐點再送出！");
-                return;
-            }
+    async function loadStores() {
+      const select = $("storeSelect");
+      select.disabled = true;
+      select.innerHTML = '<option value="">店家載入中...</option>';
 
-            let postData = {
-                targetDate: targetDate,
-                storeId: storeId,
-                storeName: storeName,
-                lineName: currentLineName,
-                items: orderItems
-            };
+      try {
+        const result = await apiGet({ action: "getStores" });
+        const stores = Array.isArray(result.data) ? result.data : [];
 
-            try {
-                let response = await fetch(GAS_API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(postData)
-                });
-                let result = await response.json();
-                
-                if (result.status === "success") {
-                    alert("🎉 訂單送出成功！已自動記錄至試算表。");
-                    menuDataCache.forEach((_, index) => {
-                        document.getElementById(`qty_${index}`).value = 0;
-                    });
-                } else {
-                    alert("送出失敗：" + (result.message || "未知錯誤"));
-                }
-            } catch (err) {
-                console.error("送出訂單發生錯誤:", err);
-                alert("網路連線或後端發生錯誤，請稍後再試。");
-            }
+        if (!stores.length) {
+          select.innerHTML = '<option value="">目前沒有可用店家</option>';
+          $("menuList").textContent = "目前沒有可用店家。";
+          return;
         }
-    </script>
+
+        select.innerHTML = stores.map(store =>
+          `<option value="${escapeHtml(store.storeId)}">${escapeHtml(store.storeName)}</option>`
+        ).join("");
+
+        select.disabled = false;
+        await loadMenu(select.value);
+      } catch (error) {
+        console.error("店家載入失敗：", error);
+        select.innerHTML = '<option value="">店家載入失敗</option>';
+        $("menuList").textContent = `店家載入失敗：${error.message}`;
+      }
+    }
+
+    async function loadMenu(storeId) {
+      if (!storeId) return;
+      $("menuList").textContent = "菜單載入中...";
+      $("submitButton").disabled = true;
+      menuDataCache = [];
+
+      try {
+        const result = await apiGet({ action: "getMenu", storeId });
+        menuDataCache = Array.isArray(result.data) ? result.data : [];
+
+        if (!menuDataCache.length) {
+          $("menuList").textContent = "此店家目前沒有菜單。";
+          updateTotal();
+          return;
+        }
+
+        $("menuList").innerHTML = menuDataCache.map((item, index) => `
+          <div class="menu-item">
+            <div>
+              <div class="item-name">${escapeHtml(item.itemName)}</div>
+              <div class="price">$${Number(item.unitPrice).toLocaleString("zh-TW")} 元</div>
+            </div>
+            <input class="qty" type="number" min="0" step="1" inputmode="numeric"
+              value="0" data-index="${index}" aria-label="${escapeHtml(item.itemName)}數量">
+          </div>
+        `).join("");
+
+        $("menuList").querySelectorAll(".qty").forEach(input => {
+          input.addEventListener("input", updateTotal);
+        });
+
+        $("submitButton").disabled = false;
+        updateTotal();
+      } catch (error) {
+        console.error("菜單載入失敗：", error);
+        $("menuList").textContent = `菜單載入失敗：${error.message}`;
+        updateTotal();
+      }
+    }
+
+    function collectOrderItems() {
+      return Array.from($("menuList").querySelectorAll(".qty"))
+        .map(input => {
+          const index = Number(input.dataset.index);
+          const item = menuDataCache[index];
+          const quantity = Math.floor(Number(input.value) || 0);
+          return {
+            itemName: item.itemName,
+            unitPrice: Number(item.unitPrice),
+            quantity: quantity
+          };
+        })
+        .filter(item => item.quantity > 0);
+    }
+
+    function updateTotal() {
+      const items = collectOrderItems();
+      const total = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+      $("orderTotal").textContent = `目前合計：$${total.toLocaleString("zh-TW")}`;
+    }
+
+    async function submitOrder() {
+      const targetDate = $("targetDate").value;
+      const storeSelect = $("storeSelect");
+      const storeId = storeSelect.value;
+      const storeName = storeSelect.selectedOptions[0]?.textContent || "";
+      const items = collectOrderItems();
+
+      if (!targetDate) return alert("請先選擇用餐日期。");
+      if (!storeId) return alert("請先選擇店家。");
+      if (!items.length) return alert("請至少選擇一項餐點。");
+
+      const button = $("submitButton");
+      button.disabled = true;
+      button.textContent = "訂單送出中...";
+
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            targetDate,
+            storeId,
+            storeName,
+            lineName: currentLineName,
+            items
+          })
+        });
+
+        if (!response.ok) throw new Error(`伺服器回應 ${response.status}`);
+        const result = await response.json();
+        if (result.status !== "success") throw new Error(result.message || "訂單寫入失敗");
+
+        alert(`訂單送出成功！共記錄 ${result.savedCount || items.length} 項餐點。`);
+        $("menuList").querySelectorAll(".qty").forEach(input => input.value = "0");
+        updateTotal();
+      } catch (error) {
+        console.error("訂單送出失敗：", error);
+        alert(`訂單送出失敗：${error.message}`);
+      } finally {
+        button.disabled = false;
+        button.textContent = "確認送出訂單";
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[char]));
+    }
+  </script>
 </body>
 </html>
