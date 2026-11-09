@@ -5,305 +5,382 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#111827">
   <title>店小二點餐系統</title>
-
-  <!-- LINE LIFF SDK -->
   <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
   <style>
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
-    body {
-      margin: 0; padding: 18px 14px 110px;
-      background: #111827; color: #f9fafb;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    .wrap {
-      width: 100%; max-width: 520px; margin: 0 auto;
-      padding: 22px; background: #1f2937; border-radius: 18px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.22);
-    }
-    h1 { margin: 0; color: #4ade80; font-size: 25px; text-align: center; }
-    .status { margin: 10px 0 20px; text-align: center; color: #86efac; font-size: 14px; }
-    .status.error { color: #fca5a5; }
-    .panel { padding: 14px; margin-bottom: 20px; background: #374151; border-radius: 12px; }
-    .field { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 9px 0; }
-    label { color: #d1d5db; font-size: 14px; }
-    input, select {
-      min-width: 0; padding: 9px 10px; color: white;
-      background: #1f2937; border: 1px solid #6b7280; border-radius: 8px;
-      font-size: 15px;
-    }
-    #storeSelect { width: 62%; }
-    h2 { margin: 0 0 12px; color: #d1d5db; font-size: 15px; }
-    .menu-item {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 12px; margin: 9px 0; padding: 13px;
-      background: #374151; border: 1px solid #4b5563; border-radius: 10px;
-    }
-    .item-name { font-weight: 700; overflow-wrap: anywhere; }
-    .price { margin-top: 5px; color: #4ade80; font-size: 14px; }
-    .qty { width: 76px; text-align: center; }
-    .message { padding: 18px 8px; color: #9ca3af; text-align: center; }
-    .bottom {
-      position: fixed; z-index: 5; right: 0; bottom: 0; left: 0;
-      padding: 13px 16px calc(13px + env(safe-area-inset-bottom));
-      background: rgba(17,24,39,.96); border-top: 1px solid #374151;
-    }
-    .bottom-inner { max-width: 520px; margin: auto; }
-    button {
-      width: 100%; padding: 15px; color: #052e16; background: #4ade80;
-      border: 0; border-radius: 12px; font-size: 17px; font-weight: 800;
-    }
-    button:disabled { opacity: .55; }
-    .total { margin: 0 0 9px; text-align: right; color: #d1d5db; font-size: 14px; }
+    body { margin:0; padding:18px 14px 35px; background:#111827; color:#f9fafb; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    .wrap { width:100%; max-width:620px; margin:0 auto; padding:20px; background:#1f2937; border-radius:18px; box-shadow:0 8px 30px rgba(0,0,0,.22); }
+    h1 { margin:0; color:#4ade80; font-size:25px; text-align:center; }
+    h2 { margin:0 0 12px; color:#d1d5db; font-size:17px; }
+    h3 { margin:0 0 8px; font-size:15px; }
+    .status { margin:10px 0 18px; text-align:center; color:#86efac; font-size:14px; }
+    .status.error { color:#fca5a5; }
+    .panel { padding:14px; margin:14px 0; background:#374151; border-radius:12px; }
+    .field { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:9px 0; }
+    label { color:#d1d5db; font-size:14px; }
+    input,select,textarea { min-width:0; width:62%; padding:10px; color:white; background:#1f2937; border:1px solid #6b7280; border-radius:8px; font-size:15px; }
+    textarea { width:100%; min-height:60px; resize:vertical; }
+    button { padding:12px 14px; color:#052e16; background:#4ade80; border:0; border-radius:10px; font-size:15px; font-weight:800; cursor:pointer; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    button.secondary { color:#f9fafb; background:#4b5563; }
+    button.danger { color:white; background:#b91c1c; }
+    .tabs { display:flex; gap:8px; margin:16px 0; }
+    .tabs button { flex:1; }
+    .tabs button.active { outline:2px solid #4ade80; }
+    .hidden { display:none !important; }
+    .menu-item,.group-card,.detail-item { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:9px 0; padding:13px; background:#374151; border:1px solid #4b5563; border-radius:10px; }
+    .item-name { font-weight:700; overflow-wrap:anywhere; }
+    .price,.muted { margin-top:5px; color:#9ca3af; font-size:13px; }
+    .price { color:#4ade80; }
+    .qty { width:76px; text-align:center; }
+    .full { width:100%; }
+    .message { padding:18px 8px; color:#9ca3af; text-align:center; }
+    .totalbox { display:flex; justify-content:space-between; gap:10px; padding:12px; background:#064e3b; border-radius:10px; margin:12px 0; font-weight:800; }
+    .summary-row { display:flex; justify-content:space-between; padding:8px 2px; border-bottom:1px solid #4b5563; }
+    .actions { display:flex; gap:8px; margin-top:12px; }
+    .actions button { flex:1; }
+    .tag { display:inline-block; padding:3px 8px; border-radius:20px; background:#065f46; color:#a7f3d0; font-size:12px; }
+    .small { font-size:12px; color:#9ca3af; }
   </style>
 </head>
-
 <body>
-  <main class="wrap">
-    <h1>🍱 店小二點餐系統</h1>
-    <p id="lineUser" class="status">正在確認 LINE 登入狀態...</p>
+<main class="wrap">
+  <h1>🍱 店小二點餐系統</h1>
+  <p id="lineUser" class="status">正在確認 LINE 登入狀態...</p>
 
+  <div class="tabs">
+    <button id="tabPersonal" class="active" type="button">個人點餐</button>
+    <button id="tabGroup" type="button">群組團訂</button>
+  </div>
+
+  <section id="personalSection">
     <section class="panel">
-      <div class="field">
-        <label for="targetDate">目標日期：</label>
-        <input type="date" id="targetDate">
-      </div>
-      <div class="field">
-        <label for="storeSelect">選擇店家：</label>
-        <select id="storeSelect" disabled>
-          <option value="">店家載入中...</option>
-        </select>
-      </div>
+      <div class="field"><label for="targetDate">用餐日期</label><input type="date" id="targetDate"></div>
+      <div class="field"><label for="storeSelect">選擇店家</label><select id="storeSelect" disabled><option>店家載入中...</option></select></div>
     </section>
-
     <section>
       <h2>菜單列表</h2>
       <div id="menuList" class="message">正在載入菜單...</div>
     </section>
-  </main>
+    <div class="totalbox"><span>目前合計</span><span id="orderTotal">$0</span></div>
+    <button id="submitButton" class="full" type="button">確認送出個人訂單</button>
+  </section>
 
-  <footer class="bottom">
-    <div class="bottom-inner">
-      <p id="orderTotal" class="total">目前合計：$0</p>
-      <button id="submitButton" type="button">確認送出訂單</button>
+  <section id="groupSection" class="hidden">
+    <div id="groupHome">
+      <section class="panel">
+        <h2>建立新團訂</h2>
+        <div class="field"><label for="groupDate">用餐日期</label><input type="date" id="groupDate"></div>
+        <div class="field"><label for="groupStore">選擇店家</label><select id="groupStore"><option value="">店家載入中...</option></select></div>
+        <div class="field"><label for="groupCutoff">截止時間</label><input type="datetime-local" id="groupCutoff"></div>
+        <button id="createGroupButton" class="full" type="button">開團並通知 LINE 群組</button>
+        <p class="small">開團後，系統會將團訂連結推播到目前已啟用的 LINE 群組。</p>
+      </section>
+      <section>
+        <h2>目前開放中的團訂</h2>
+        <div id="groupList" class="message">載入團訂中...</div>
+        <button id="refreshGroups" class="secondary full" type="button">重新整理團訂列表</button>
+      </section>
     </div>
-  </footer>
 
-  <script>
-    "use strict";
+    <div id="groupDetailSection" class="hidden">
+      <button id="backToGroups" class="secondary full" type="button">← 返回團訂列表</button>
+      <section class="panel">
+        <h2 id="detailTitle">團訂明細</h2>
+        <div id="detailMeta" class="muted"></div>
+        <div class="totalbox"><span>總杯數 / 數量</span><span id="groupTotalQty">0</span></div>
+        <div class="totalbox"><span>總金額</span><span id="groupTotalAmount">$0</span></div>
+        <h3>餐點統計</h3>
+        <div id="groupSummary"></div>
+      </section>
+      <section class="panel">
+        <h2>所有成員訂單明細</h2>
+        <div id="groupItems"></div>
+      </section>
+      <section class="panel" id="groupOrderForm">
+        <h2>我要點餐 / 修改自己的訂單</h2>
+        <div id="groupMenuList" class="message">菜單載入中...</div>
+        <label for="groupNote">備註（選填）</label>
+        <textarea id="groupNote" placeholder="例如：少冰、無糖、不要吸管；可先填整筆備註"></textarea>
+        <div class="totalbox"><span>我的訂單合計</span><span id="myGroupTotal">$0</span></div>
+        <button id="submitGroupOrder" class="full" type="button">送出 / 更新我的訂單</button>
+        <button id="cancelMyOrder" class="danger full" style="margin-top:8px" type="button">取消我目前的訂單</button>
+      </section>
+      <button id="closeGroup" class="danger full hidden" type="button">開團者：結束這筆團訂</button>
+    </div>
+  </section>
+</main>
 
-    const LIFF_ID = "2012191744-V9c1IIFW";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxQcZewSGx0jWMK75CGCElJUY3QCeBA-VWbWpZhgc1ek0e_0ub5KSGKplltVaSuEWhTyQ/exec";
+<script>
+"use strict";
+const LIFF_ID = "2012191744-V9c1IIFW";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxQcZewSGx0jWMK75CGCElJUY3QCeBA-VWbWpZhgc1ek0e_0ub5KSGKplltVaSuEWhTyQ/exec";
+const $ = id => document.getElementById(id);
+let currentLineName = "訪客";
+let currentLineUserId = "";
+let accessToken = "";
+let menuDataCache = [];
+let groupMenuCache = [];
+let currentGroupId = "";
+let currentGroupDetail = null;
 
-    let currentLineName = "訪客";
-    let menuDataCache = [];
+document.addEventListener("DOMContentLoaded", initApp);
 
-    const $ = id => document.getElementById(id);
+async function initApp() {
+  $("targetDate").value = localDate();
+  $("groupDate").value = localDate();
+  $("groupCutoff").value = defaultCutoff();
+  $("storeSelect").addEventListener("change", e => loadMenu(e.target.value));
+  $("submitButton").addEventListener("click", submitPersonalOrder);
+  $("tabPersonal").addEventListener("click", () => switchTab("personal"));
+  $("tabGroup").addEventListener("click", () => switchTab("group"));
+  $("createGroupButton").addEventListener("click", createGroup);
+  $("refreshGroups").addEventListener("click", loadGroupList);
+  $("backToGroups").addEventListener("click", showGroupHome);
+  $("submitGroupOrder").addEventListener("click", submitGroupOrder);
+  $("cancelMyOrder").addEventListener("click", cancelMyOrder);
+  $("closeGroup").addEventListener("click", closeGroup);
+  await initLiff();
+  await loadStores();
+  const params = new URLSearchParams(location.search);
+  const id = params.get("groupOrderId");
+  if (id) {
+    switchTab("group");
+    await openGroup(id);
+  }
+}
 
-    document.addEventListener("DOMContentLoaded", initApp);
+function localDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function defaultCutoff() {
+  const d = new Date(Date.now()+2*60*60*1000);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}T${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+function status(msg, error=false) { $("lineUser").textContent=msg; $("lineUser").classList.toggle("error",error); }
 
-    async function initApp() {
-      $("targetDate").value = getLocalDateString();
-      $("storeSelect").addEventListener("change", event => loadMenu(event.target.value));
-      $("submitButton").addEventListener("click", submitOrder);
-
-      // 店家與菜單載入不依賴 LIFF 成功與否
-      const storesTask = loadStores();
-      await initLiff();
-      await storesTask;
-    }
-
-    function getLocalDateString() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const day = String(now.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    }
-
-    function setLineStatus(message, isError = false) {
-      $("lineUser").textContent = message;
-      $("lineUser").classList.toggle("error", isError);
-    }
-
-    async function initLiff() {
-      try {
-        if (typeof window.liff === "undefined") {
-          throw new Error("LIFF SDK 沒有成功載入。請確認網路或 SDK CDN。");
-        }
-
-        await liff.init({ liffId: LIFF_ID });
-
-        if (!liff.isInClient()) {
-          currentLineName = "瀏覽器訪客";
-          setLineStatus("目前不是從 LINE 內開啟；無法讀取 LINE 名稱。", true);
-          return;
-        }
-
-        if (!liff.isLoggedIn()) {
-          setLineStatus("正在前往 LINE 登入...");
-          liff.login({ redirectUri: window.location.href });
-          return;
-        }
-
-        const profile = await liff.getProfile();
-        currentLineName = profile.displayName || "LINE使用者";
-        setLineStatus(`目前登入：${currentLineName}（LINE 認證成功）`);
-      } catch (error) {
-        console.error("LIFF 初始化失敗：", error);
-        currentLineName = "訪客";
-        setLineStatus(`LINE 認證未完成：${error.message || error}`, true);
+async function initLiff() {
+  try {
+    if (!window.liff) throw new Error("LIFF SDK 尚未載入");
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isInClient()) {
+      if (!liff.isLoggedIn()) {
+        status("請從 LINE 開啟本頁面，才能使用群組團訂。", true);
+        return;
       }
+    } else if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: location.href });
+      return;
     }
+    const profile = await liff.getProfile();
+    currentLineName = profile.displayName || "LINE使用者";
+    currentLineUserId = profile.userId || "";
+    accessToken = liff.getAccessToken() || "";
+    status(`目前登入：${currentLineName}`);
+  } catch (e) {
+    console.error(e);
+    status("LINE 登入未完成：" + (e.message || e), true);
+  }
+}
 
-    async function apiGet(params) {
-      const url = new URL(GAS_API_URL);
-      Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-      const response = await fetch(url.toString(), { method: "GET", redirect: "follow" });
-      if (!response.ok) throw new Error(`伺服器回應 ${response.status}`);
-      const result = await response.json();
-      if (result.status !== "success") throw new Error(result.message || "讀取資料失敗");
-      return result;
-    }
+async function apiGet(params) {
+  const url = new URL(GAS_API_URL);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error("伺服器回應 " + res.status);
+  const result = await res.json();
+  if (result.status !== "success") throw new Error(result.message || "讀取失敗");
+  return result;
+}
+async function apiPost(data) {
+  const res = await fetch(GAS_API_URL, { method:"POST", body:JSON.stringify(data) });
+  if (!res.ok) throw new Error("伺服器回應 " + res.status);
+  const result = await res.json();
+  if (result.status !== "success") throw new Error(result.message || "操作失敗");
+  return result;
+}
+function authPayload(action, extra={}) {
+  if (!accessToken || !currentLineUserId) throw new Error("請從 LINE 內重新開啟點餐頁面，完成登入後再操作。");
+  return { action, accessToken, userId:currentLineUserId, ...extra };
+}
 
-    async function loadStores() {
-      const select = $("storeSelect");
-      select.disabled = true;
-      select.innerHTML = '<option value="">店家載入中...</option>';
+async function loadStores() {
+  try {
+    const result = await apiGet({action:"getStores"});
+    const stores = result.data || [];
+    const options = stores.map(s=>`<option value="${esc(s.storeId)}">${esc(s.storeName)}</option>`).join("");
+    $("storeSelect").innerHTML = options || '<option value="">目前沒有店家</option>';
+    $("groupStore").innerHTML = options || '<option value="">目前沒有店家</option>';
+    $("storeSelect").disabled = !stores.length;
+    if (stores.length) await loadMenu($("storeSelect").value);
+  } catch(e) {
+    $("menuList").textContent = "店家載入失敗：" + e.message;
+    $("groupStore").innerHTML = '<option value="">店家載入失敗</option>';
+  }
+}
 
-      try {
-        const result = await apiGet({ action: "getStores" });
-        const stores = Array.isArray(result.data) ? result.data : [];
+async function loadMenu(storeId) {
+  if (!storeId) return;
+  $("menuList").textContent = "菜單載入中...";
+  try {
+    const result = await apiGet({action:"getMenu",storeId});
+    menuDataCache = result.data || [];
+    $("menuList").innerHTML = menuDataCache.length ? menuDataCache.map((it,i)=>`
+      <div class="menu-item"><div><div class="item-name">${esc(it.itemName)}</div><div class="price">$${money(it.unitPrice)}</div></div>
+      <input class="qty personalQty" type="number" min="0" step="1" value="0" data-index="${i}" aria-label="${esc(it.itemName)}數量"></div>`).join("") : "此店家目前沒有菜單。";
+    $("menuList").querySelectorAll(".qty").forEach(el=>el.addEventListener("input",updatePersonalTotal));
+    updatePersonalTotal();
+  } catch(e) { $("menuList").textContent = "菜單載入失敗：" + e.message; }
+}
+function collectPersonalItems() {
+  return [...$("menuList").querySelectorAll(".qty")].map(el=>{
+    const it=menuDataCache[Number(el.dataset.index)];
+    return {itemName:it.itemName,unitPrice:Number(it.unitPrice),quantity:Math.floor(Number(el.value)||0)};
+  }).filter(x=>x.quantity>0);
+}
+function updatePersonalTotal() {
+  const sum=collectPersonalItems().reduce((a,x)=>a+x.quantity*x.unitPrice,0);
+  $("orderTotal").textContent="$"+money(sum);
+}
+async function submitPersonalOrder() {
+  try {
+    const items=collectPersonalItems();
+    if (!$("targetDate").value) throw new Error("請選擇用餐日期。");
+    if (!items.length) throw new Error("請至少選擇一項餐點。");
+    const btn=$("submitButton"); btn.disabled=true; btn.textContent="送出中...";
+    const result=await apiPost({targetDate:$("targetDate").value,storeId:$("storeSelect").value,
+      storeName:$("storeSelect").selectedOptions[0]?.textContent||"",lineName:currentLineName,items});
+    alert("個人訂單送出成功！共記錄 "+(result.savedCount||items.length)+" 項餐點。");
+    $("menuList").querySelectorAll(".qty").forEach(x=>x.value=0); updatePersonalTotal();
+    btn.disabled=false; btn.textContent="確認送出個人訂單";
+  } catch(e) { alert(e.message); $("submitButton").disabled=false; $("submitButton").textContent="確認送出個人訂單"; }
+}
 
-        if (!stores.length) {
-          select.innerHTML = '<option value="">目前沒有可用店家</option>';
-          $("menuList").textContent = "目前沒有可用店家。";
-          return;
-        }
-
-        select.innerHTML = stores.map(store =>
-          `<option value="${escapeHtml(store.storeId)}">${escapeHtml(store.storeName)}</option>`
-        ).join("");
-
-        select.disabled = false;
-        await loadMenu(select.value);
-      } catch (error) {
-        console.error("店家載入失敗：", error);
-        select.innerHTML = '<option value="">店家載入失敗</option>';
-        $("menuList").textContent = `店家載入失敗：${error.message}`;
-      }
-    }
-
-    async function loadMenu(storeId) {
-      if (!storeId) return;
-      $("menuList").textContent = "菜單載入中...";
-      $("submitButton").disabled = true;
-      menuDataCache = [];
-
-      try {
-        const result = await apiGet({ action: "getMenu", storeId });
-        menuDataCache = Array.isArray(result.data) ? result.data : [];
-
-        if (!menuDataCache.length) {
-          $("menuList").textContent = "此店家目前沒有菜單。";
-          updateTotal();
-          return;
-        }
-
-        $("menuList").innerHTML = menuDataCache.map((item, index) => `
-          <div class="menu-item">
-            <div>
-              <div class="item-name">${escapeHtml(item.itemName)}</div>
-              <div class="price">$${Number(item.unitPrice).toLocaleString("zh-TW")} 元</div>
-            </div>
-            <input class="qty" type="number" min="0" step="1" inputmode="numeric"
-              value="0" data-index="${index}" aria-label="${escapeHtml(item.itemName)}數量">
-          </div>
-        `).join("");
-
-        $("menuList").querySelectorAll(".qty").forEach(input => {
-          input.addEventListener("input", updateTotal);
-        });
-
-        $("submitButton").disabled = false;
-        updateTotal();
-      } catch (error) {
-        console.error("菜單載入失敗：", error);
-        $("menuList").textContent = `菜單載入失敗：${error.message}`;
-        updateTotal();
-      }
-    }
-
-    function collectOrderItems() {
-      return Array.from($("menuList").querySelectorAll(".qty"))
-        .map(input => {
-          const index = Number(input.dataset.index);
-          const item = menuDataCache[index];
-          const quantity = Math.floor(Number(input.value) || 0);
-          return {
-            itemName: item.itemName,
-            unitPrice: Number(item.unitPrice),
-            quantity: quantity
-          };
-        })
-        .filter(item => item.quantity > 0);
-    }
-
-    function updateTotal() {
-      const items = collectOrderItems();
-      const total = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-      $("orderTotal").textContent = `目前合計：$${total.toLocaleString("zh-TW")}`;
-    }
-
-    async function submitOrder() {
-      const targetDate = $("targetDate").value;
-      const storeSelect = $("storeSelect");
-      const storeId = storeSelect.value;
-      const storeName = storeSelect.selectedOptions[0]?.textContent || "";
-      const items = collectOrderItems();
-
-      if (!targetDate) return alert("請先選擇用餐日期。");
-      if (!storeId) return alert("請先選擇店家。");
-      if (!items.length) return alert("請至少選擇一項餐點。");
-
-      const button = $("submitButton");
-      button.disabled = true;
-      button.textContent = "訂單送出中...";
-
-      try {
-        const response = await fetch(GAS_API_URL, {
-          method: "POST",
-          body: JSON.stringify({
-            targetDate,
-            storeId,
-            storeName,
-            lineName: currentLineName,
-            items
-          })
-        });
-
-        if (!response.ok) throw new Error(`伺服器回應 ${response.status}`);
-        const result = await response.json();
-        if (result.status !== "success") throw new Error(result.message || "訂單寫入失敗");
-
-        alert(`訂單送出成功！共記錄 ${result.savedCount || items.length} 項餐點。`);
-        $("menuList").querySelectorAll(".qty").forEach(input => input.value = "0");
-        updateTotal();
-      } catch (error) {
-        console.error("訂單送出失敗：", error);
-        alert(`訂單送出失敗：${error.message}`);
-      } finally {
-        button.disabled = false;
-        button.textContent = "確認送出訂單";
-      }
-    }
-
-    function escapeHtml(value) {
-      return String(value ?? "").replace(/[&<>"']/g, char => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-      }[char]));
-    }
-  </script>
+function switchTab(which) {
+  const personal=which==="personal";
+  $("personalSection").classList.toggle("hidden",!personal);
+  $("groupSection").classList.toggle("hidden",personal);
+  $("tabPersonal").classList.toggle("active",personal);
+  $("tabGroup").classList.toggle("active",!personal);
+  if (!personal && accessToken) loadGroupList();
+}
+async function createGroup() {
+  try {
+    const targetDate=$("groupDate").value;
+    const storeId=$("groupStore").value;
+    const storeName=$("groupStore").selectedOptions[0]?.textContent||"";
+    const cutoffAt=$("groupCutoff").value;
+    if (!targetDate || !storeId || !cutoffAt) throw new Error("請填寫用餐日期、店家及截止時間。");
+    if (new Date(cutoffAt).getTime()<=Date.now()) throw new Error("截止時間必須晚於現在。");
+    const btn=$("createGroupButton"); btn.disabled=true; btn.textContent="建立中...";
+    const result=await apiPost(authPayload("createGroupOrder",{targetDate,storeId,storeName,cutoffAt}));
+    alert(result.message + (result.groupOrderId ? "\n團訂編號："+result.groupOrderId : ""));
+    await loadGroupList();
+    btn.disabled=false; btn.textContent="開團並通知 LINE 群組";
+  } catch(e) { alert(e.message); $("createGroupButton").disabled=false; $("createGroupButton").textContent="開團並通知 LINE 群組"; }
+}
+async function loadGroupList() {
+  $("groupList").textContent="載入團訂中...";
+  try {
+    const result=await apiPost(authPayload("groupList"));
+    const list=result.data||[];
+    $("groupList").innerHTML=list.length?list.map(o=>`
+      <div class="group-card"><div><div class="item-name">${esc(o.storeName)} <span class="tag">開放中</span></div>
+      <div class="muted">用餐：${esc(o.targetDate)}｜團訂：${esc(o.groupOrderId)}</div>
+      <div class="muted">開團者：${esc(o.ownerName)}｜截止：${esc(o.cutoffAt.replace("T"," "))}</div></div>
+      <button type="button" onclick="openGroup('${escAttr(o.groupOrderId)}')">進入</button></div>`).join(""):"目前沒有開放中的團訂。";
+  } catch(e) { $("groupList").textContent="團訂列表讀取失敗："+e.message; }
+}
+function showGroupHome() {
+  $("groupHome").classList.remove("hidden");
+  $("groupDetailSection").classList.add("hidden");
+  currentGroupId="";
+  history.replaceState(null,"",location.pathname);
+  loadGroupList();
+}
+async function openGroup(id) {
+  try {
+    currentGroupId=id;
+    $("groupHome").classList.add("hidden");
+    $("groupDetailSection").classList.remove("hidden");
+    $("detailTitle").textContent="團訂 "+id;
+    $("detailMeta").textContent="讀取團訂資料中...";
+    history.replaceState(null,"",location.pathname+"?groupOrderId="+encodeURIComponent(id));
+    const result=await apiPost(authPayload("groupDetail",{groupOrderId:id}));
+    currentGroupDetail=result;
+    const o=result.order;
+    $("detailTitle").textContent=`${o.storeName}｜${o.targetDate}`;
+    $("detailMeta").textContent=`團訂編號：${o.groupOrderId}｜開團者：${o.ownerName}｜截止：${String(o.cutoffAt).replace("T"," ")}`;
+    $("groupTotalQty").textContent=String(result.totalQty||0);
+    $("groupTotalAmount").textContent="$"+money(result.totalAmount||0);
+    const summary=Object.entries(result.summary||{});
+    $("groupSummary").innerHTML=summary.length?summary.map(([name,v])=>`<div class="summary-row"><span>${esc(name)}</span><b>${v.totalQty} 份｜$${money(v.totalAmount)}</b></div>`).join(""):"尚無人點餐。";
+    $("groupItems").innerHTML=(result.items||[]).length?result.items.map(it=>`
+      <div class="detail-item"><div><b>${esc(it.lineName)}</b><div>${esc(it.itemName)} × ${it.quantity}</div>
+      <div class="muted">${esc(it.options||"")}${it.note?"｜"+esc(it.note):""}</div></div><b>$${money(it.subtotal)}</b></div>`).join(""):"尚無訂單明細。";
+    $("closeGroup").classList.toggle("hidden",o.ownerUserId!==currentLineUserId || o.status!=="開放");
+    $("groupOrderForm").classList.toggle("hidden",o.status!=="開放" || (o.cutoffAt && new Date(o.cutoffAt).getTime()<Date.now()));
+    await loadGroupMenu(o.storeId,result.items||[]);
+  } catch(e) {
+    $("detailMeta").textContent="讀取失敗："+e.message;
+    alert(e.message);
+    showGroupHome();
+  }
+}
+async function loadGroupMenu(storeId, existingItems) {
+  const result=await apiGet({action:"getMenu",storeId});
+  groupMenuCache=result.data||[];
+  const mine=(existingItems||[]).filter(x=>x.userId===currentLineUserId);
+  const existingMap={};
+  mine.forEach(x=>existingMap[x.itemName]=(existingMap[x.itemName]||0)+x.quantity);
+  $("groupMenuList").innerHTML=groupMenuCache.length?groupMenuCache.map((it,i)=>`
+    <div class="menu-item"><div><div class="item-name">${esc(it.itemName)}</div><div class="price">$${money(it.unitPrice)}</div></div>
+    <input class="qty groupQty" type="number" min="0" step="1" value="${existingMap[it.itemName]||0}" data-index="${i}"></div>`).join(""):"此店家沒有菜單。";
+  $("groupMenuList").querySelectorAll(".groupQty").forEach(el=>el.addEventListener("input",updateGroupTotal));
+  const note=mine.map(x=>x.note).filter(Boolean)[0]||"";
+  $("groupNote").value=note;
+  updateGroupTotal();
+}
+function collectGroupItems() {
+  return [...$("groupMenuList").querySelectorAll(".groupQty")].map(el=>{
+    const it=groupMenuCache[Number(el.dataset.index)];
+    return {itemName:it.itemName,unitPrice:Number(it.unitPrice),quantity:Math.floor(Number(el.value)||0)};
+  }).filter(x=>x.quantity>0);
+}
+function updateGroupTotal() {
+  const total=collectGroupItems().reduce((s,x)=>s+x.quantity*x.unitPrice,0);
+  $("myGroupTotal").textContent="$"+money(total);
+}
+async function submitGroupOrder() {
+  try {
+    const items=collectGroupItems();
+    if (!items.length) throw new Error("請至少選擇一項餐點。");
+    await apiPost(authPayload("groupSubmit",{groupOrderId:currentGroupId,items:items.map(x=>({...x,note:$("groupNote").value}))}));
+    alert("團訂已送出／更新！");
+    await openGroup(currentGroupId);
+  } catch(e) { alert(e.message); }
+}
+async function cancelMyOrder() {
+  if (!confirm("確定取消自己目前這筆團訂的所有餐點？")) return;
+  try {
+    await apiPost(authPayload("groupCancelMine",{groupOrderId:currentGroupId}));
+    alert("自己的訂單已取消。");
+    await openGroup(currentGroupId);
+  } catch(e) { alert(e.message); }
+}
+async function closeGroup() {
+  if (!confirm("確定結束這筆團訂？結單後成員將不能再修改。")) return;
+  try {
+    await apiPost(authPayload("groupClose",{groupOrderId:currentGroupId}));
+    alert("團訂已結單。");
+    await openGroup(currentGroupId);
+  } catch(e) { alert(e.message); }
+}
+function money(v) { return Number(v||0).toLocaleString("zh-TW"); }
+function esc(v) { return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function escAttr(v) { return esc(v).replace(/`/g,"&#96;"); }
+</script>
 </body>
 </html>
